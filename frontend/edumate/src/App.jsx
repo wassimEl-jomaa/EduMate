@@ -17,7 +17,8 @@ import Admin from "./pages/Admin"; // Import the Admin component
 import ManageUsers from "./pages/ManageUsers";
 import ManageMemberships from "./pages/ManageMemberships";
 import ManageArskurs from "./pages/ManageArskurs";
-
+import Betyg from "./pages/ManageBetyg";
+import ManageBetyg from "./pages/ManageBetyg";
 const App = () => {
   const [signedIn, setSignedIn] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -57,6 +58,7 @@ const App = () => {
         <Route path="/manage-users" element={<ManageUsers />} />
         <Route path="/manage-memberships" element={<ManageMemberships />} />
         <Route path="/manage-arskurs" element={<ManageArskurs />} />
+        <Route path="/betyg" element={<ManageBetyg />} />
       </Routes>
       <Footer />
     </div>

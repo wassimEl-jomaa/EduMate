@@ -18,7 +18,7 @@ const Admin = () => {
           </li>
           <li>
             <Link
-              to="/ManageUsers"
+              to="/betyg"
               className="block text-lg text-blue-800 hover:text-blue-600"
             >
               Beytg

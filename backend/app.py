@@ -330,7 +330,16 @@ def create_betyg_view(betyg: BetygCreate, database: Session = Depends(get_db)):
     """
     Create a new betyg.
     """
-    return crud.create_betyg(database, betyg)
+    new_betyg = Betyg(
+        grade=betyg.grade,
+        comments=betyg.comments,
+        feedback=betyg.feedback,
+        homework_id=betyg.homework_id,
+    )
+    database.add(new_betyg)
+    database.commit()
+    database.refresh(new_betyg)
+    return new_betyg
 @app.put("/betyg/{betyg_id}", response_model=BetygOut)
 def update_betyg_view(betyg_id: int, betyg: BetygUpdate, database: Session = Depends(get_db)):
     """
