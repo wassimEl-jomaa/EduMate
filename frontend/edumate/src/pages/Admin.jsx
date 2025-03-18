@@ -34,7 +34,7 @@ const Admin = () => {
           </li>
           <li>
             <Link
-              to="/add-role"
+              to="/manage-arskurs"
               className="block text-lg text-blue-800 hover:text-blue-600"
             >
               Arskurs

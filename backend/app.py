@@ -8,7 +8,7 @@ import crud
 import uvicorn
 from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
-from models import Arskurs, Homework, Subject, User, Membership
+from models import Arskurs, Homework, Role, Subject, User, Membership
 from schemas import MembershipCreate
 from schemas import UserOut, RoleOut
 
@@ -58,6 +58,12 @@ def add_users(
     database.commit()
     database.refresh(new_user)
     return new_user  # Return SQLAlchemy model, but response model will be UserOut
+@app.post("/get_user_by_email_and_password")
+def get_user_by_email(user: GetUser, database: Session = Depends(get_db)):
+    user = crud.get_user_by_email_and_password(database, user.email, user.password)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found or incorrect password")
+    return user
 @app.delete("/users/{user_id}")
 def delete_user_view(user_id: int, database: Session = Depends(get_db)):
     """
@@ -110,6 +116,7 @@ def replace_membership(membership_id: int, membership: MembershipCreate, databas
     database.commit()
     database.refresh(db_membership)
     return db_membership
+
 @app.delete("/memberships/{membership_id}")
 def delete_membership_view(membership_id: int, database: Session = Depends(get_db)):
     """
@@ -151,13 +158,31 @@ def get_users_by_role(role_name: str, database: Session = Depends(get_db)):
     """
     users = crud.get_users_by_role(database, role_name)
     return users
+@app.patch("/roles/{role_id}", response_model=RoleOut)
+def update_role(role_id: int, role_name: str, database: Session = Depends(get_db)):
+    """
+    Update an existing role's name.
+    """
+    db_role = database.query(Role).filter(Role.id == role_id).first()
+    if not db_role:
+        raise HTTPException(status_code=404, detail="Role not found")
 
-@app.post("/get_user_by_email_and_password")
-def get_user_by_email(user: GetUser, database: Session = Depends(get_db)):
-    user = crud.get_user_by_email_and_password(database, user.email, user.password)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found or incorrect password")
-    return user
+    db_role.name = role_name  # Update the role's name
+    database.commit()
+    database.refresh(db_role)
+    return db_role
+@app.delete("/roles/{role_id}", response_model=RoleOut)
+def delete_role(role_id: int, database: Session = Depends(get_db)):
+    """
+    Delete a role from the database.
+    """
+    db_role = database.query(Role).filter(Role.id == role_id).first()
+    if not db_role:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    database.delete(db_role)
+    database.commit()
+    return db_role
 
 # Create homework
 @app.post("/homework/", response_model=HomeworkOut)
@@ -303,7 +328,15 @@ def get_subject_by_id(subject_id: int, database: Session = Depends(get_db)):
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
     return subject
-
+@app.get("/subjects/", response_model=List[SubjectOut])
+def get_all_subjects(database: Session = Depends(get_db)):
+    """
+    Retrieve all subjects from the database.
+    """
+    subjects = database.query(Subject).all()
+    if not subjects:
+        raise HTTPException(status_code=404, detail="No subjects found")
+    return subjects
 @app.post("/subjects/", response_model=SubjectOut)
 def create_subject(subject: SubjectCreate, database: Session = Depends(get_db)):
     """
@@ -318,6 +351,17 @@ def create_subject(subject: SubjectCreate, database: Session = Depends(get_db)):
     database.commit()
     database.refresh(new_subject)
     return new_subject
+@app.delete("/subjects/{subject_id}", response_model=SubjectOut)
+def delete_subject(subject_id: int, database: Session = Depends(get_db)):
+    """
+    Delete a subject from the database.
+    """
+    db_subject = database.query(Subject).filter(Subject.id == subject_id).first()
+    if not db_subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
 
+    database.delete(db_subject)
+    database.commit()
+    return db_subject
 if __name__ == '__main__':
     uvicorn.run(app)
