@@ -51,9 +51,9 @@ const ManageMemberships = () => {
             membership.id === editingMembershipId ? response.data : membership
           )
         );
-        setSuccessMessage(`Membership updated successfully!`);
+        setSuccessMessage("Membership updated successfully!");
       } else {
-        // Add membership
+        // Add new membership
         const response = await axios.post(
           "http://localhost:8000/memberships/",
           membershipData
@@ -62,32 +62,18 @@ const ManageMemberships = () => {
           ...prevMemberships,
           response.data,
         ]);
-        setSuccessMessage(`Membership added successfully!`);
+        setSuccessMessage("Membership added successfully!");
       }
 
       setErrorMessage("");
-      setMembershipData({
-        membership_type: "",
-        start_date: "",
-        end_date: "",
-      });
+      setMembershipData({ membership_type: "", start_date: "", end_date: "" });
       setEditingMembershipId(null);
     } catch (error) {
       console.error(
         "Error managing membership:",
         error.response?.data || error.message
       );
-
-      // Extract error message
-      const errorDetail = error.response?.data?.detail;
-      if (Array.isArray(errorDetail)) {
-        setErrorMessage(errorDetail.map((err) => err.msg).join(", "));
-      } else if (typeof errorDetail === "string") {
-        setErrorMessage(errorDetail);
-      } else {
-        setErrorMessage("Failed to manage membership. Please try again.");
-      }
-
+      setErrorMessage("Failed to manage membership. Please try again.");
       setSuccessMessage("");
     }
   };
@@ -106,17 +92,7 @@ const ManageMemberships = () => {
         "Error deleting membership:",
         error.response?.data || error.message
       );
-
-      // Extract error message
-      const errorDetail = error.response?.data?.detail;
-      if (Array.isArray(errorDetail)) {
-        setErrorMessage(errorDetail.map((err) => err.msg).join(", "));
-      } else if (typeof errorDetail === "string") {
-        setErrorMessage(errorDetail);
-      } else {
-        setErrorMessage("Failed to delete membership. Please try again.");
-      }
-
+      setErrorMessage("Failed to delete membership. Please try again.");
       setSuccessMessage("");
     }
   };
