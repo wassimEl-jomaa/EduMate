@@ -2,13 +2,14 @@ from typing import List
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import update
+from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 from db_setup import get_db, create_databases
 import crud
 import uvicorn
 from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
-from models import Arskurs, Betyg, Homework, Role, Subject, User, Membership
+from models import Arskurs, Betyg, Filuppladdning, Homework, Meddelande, RecommendedResource, Role, Subject, User, Membership
 from schemas import MembershipCreate
 from schemas import UserOut, RoleOut
 
@@ -243,18 +244,78 @@ def get_homework_by_subject_view(subject_id: int, database: Session = Depends(ge
         raise HTTPException(status_code=404, detail="No homeworks found for this subject")
     
     return homeworks
+@app.delete("/homeworks/{homework_id}", response_model=HomeworkOut)
+def delete_homework(homework_id: int, database: Session = Depends(get_db)):
+    """
+    Delete a homework from the database.
+    """
+    db_homework = (
+        database.query(Homework)
+        .options(
+            joinedload(Homework.user),
+            joinedload(Homework.subject),
+            joinedload(Homework.betyg),
+            joinedload(Homework.meddelande),
+            joinedload(Homework.filuppladdning),
+            joinedload(Homework.recommended_resource),
+        )
+        .filter(Homework.id == homework_id)
+        .first()
+    )
+    if not db_homework:
+        raise HTTPException(status_code=404, detail="Homework not found")
+
+    database.delete(db_homework)
+    database.commit()
+    return db_homework
 # Create recommended resource
 @app.post("/recommended_resources/", response_model=RecommendedResourceOut)
 def create_recommended_resource_view(resource: RecommendedResourceCreate, database: Session = Depends(get_db)):
     return crud.create_recommended_resource(database, resource)
 
-# Get recommended resources by subject ID
-@app.get("/recommended_resources/subject/{subject_id}", response_model=List[RecommendedResourceOut])
-def get_recommended_resources_view(subject_id: int, database: Session = Depends(get_db)):
-    resources = crud.get_recommended_resources(database, subject_id)
+@app.get("/recommended_resources/", response_model=List[RecommendedResourceOut])
+def read_all_recommended_resources(database: Session = Depends(get_db)):
+    """
+    Retrieve all recommended resources from the database.
+    """
+    resources = database.query(RecommendedResource).all()
     if not resources:
-        raise HTTPException(status_code=404, detail="No recommended resources found for this subject")
+        raise HTTPException(status_code=404, detail="No recommended resources found")
     return resources
+@app.delete("/recommended_resources/{resource_id}", response_model=RecommendedResourceOut)
+def delete_recommended_resource(resource_id: int, database: Session = Depends(get_db)):
+    """
+    Delete a recommended resource from the database.
+    """
+    db_resource = database.query(RecommendedResource).filter(RecommendedResource.id == resource_id).first()
+    if not db_resource:
+        raise HTTPException(status_code=404, detail="Recommended resource not found")
+
+    database.delete(db_resource)
+    database.commit()
+    return db_resource
+@app.patch("/recommended_resources/{resource_id}", response_model=RecommendedResourceOut)
+def update_recommended_resource(resource_id: int, resource: RecommendedResourceCreate, database: Session = Depends(get_db)):
+    """
+    Update an existing recommended resource in the database.
+    """
+    db_resource = database.query(RecommendedResource).filter(RecommendedResource.id == resource_id).first()
+    if not db_resource:
+        raise HTTPException(status_code=404, detail="Recommended resource not found")
+
+    # Update fields
+    if resource.title is not None:
+        db_resource.title = resource.title
+    if resource.url is not None:
+        db_resource.url = resource.url
+    if resource.description is not None:
+        db_resource.description = resource.description
+    if resource.homework_id is not None:
+        db_resource.homework_id = resource.homework_id
+
+    database.commit()
+    database.refresh(db_resource)
+    return db_resource
 @app.get("/betyg/", response_model=List[BetygOut])
 def read_betyg(database: Session = Depends(get_db)):
     """
@@ -304,7 +365,35 @@ def create_meddelande_view(meddelande: MeddelandeCreate, database: Session = Dep
     Create a new meddelande.
     """
     return crud.create_meddelande(database, meddelande)
+@app.delete("/meddelanden/{meddelande_id}", response_model=MeddelandeOut)
+def delete_meddelande(meddelande_id: int, database: Session = Depends(get_db)):
+    """
+    Delete a meddelande from the database.
+    """
+    db_meddelande = database.query(Meddelande).filter(Meddelande.id == meddelande_id).first()
+    if not db_meddelande:
+        raise HTTPException(status_code=404, detail="Meddelande not found")
 
+    database.delete(db_meddelande)
+    database.commit()
+    return db_meddelande
+@app.patch("/meddelanden/{meddelande_id}", response_model=MeddelandeOut)
+def update_meddelande(meddelande_id: int, meddelande: MeddelandeCreate, database: Session = Depends(get_db)):
+    """
+    Update an existing meddelande in the database.
+    """
+    db_meddelande = database.query(Meddelande).filter(Meddelande.id == meddelande_id).first()
+    if not db_meddelande:
+        raise HTTPException(status_code=404, detail="Meddelande not found")
+
+    # Update fields
+    db_meddelande.message = meddelande.message
+    db_meddelande.description = meddelande.description
+    db_meddelande.read_status = meddelande.read_status
+
+    database.commit()
+    database.refresh(db_meddelande)
+    return db_meddelande
 @app.get("/filuppladdningar/", response_model=List[FiluppladdningOut])
 def read_filuppladdningar(database: Session = Depends(get_db)):
     """
@@ -320,7 +409,35 @@ def create_filuppladdning_view(filuppladdning: FiluppladdningCreate, database: S
     Create a new filuppladdning.
     """
     return crud.create_filuppladdning(database, filuppladdning)
+@app.delete("/filuppladdningar/{filuppladdning_id}", response_model=FiluppladdningOut)
+def delete_filuppladdning(filuppladdning_id: int, database: Session = Depends(get_db)):
+    """
+    Delete a filuppladdning from the database.
+    """
+    db_filuppladdning = database.query(Filuppladdning).filter(Filuppladdning.id == filuppladdning_id).first()
+    if not db_filuppladdning:
+        raise HTTPException(status_code=404, detail="Filuppladdning not found")
 
+    database.delete(db_filuppladdning)
+    database.commit()
+    return db_filuppladdning
+@app.patch("/filuppladdningar/{filuppladdning_id}", response_model=FiluppladdningOut)
+def update_filuppladdning(filuppladdning_id: int, filuppladdning: FiluppladdningCreate, database: Session = Depends(get_db)):
+    """
+    Update an existing filuppladdning in the database.
+    """
+    db_filuppladdning = database.query(Filuppladdning).filter(Filuppladdning.id == filuppladdning_id).first()
+    if not db_filuppladdning:
+        raise HTTPException(status_code=404, detail="Filuppladdning not found")
+
+    # Update fields
+    db_filuppladdning.filename = filuppladdning.filename
+    db_filuppladdning.filepath = filuppladdning.filepath
+    db_filuppladdning.description = filuppladdning.description
+
+    database.commit()
+    database.refresh(db_filuppladdning)
+    return db_filuppladdning
 @app.post("/arskurs/", response_model=ArskursSchema)
 def create_arskurs(arskurs: ArskursCreate, db: Session = Depends(get_db)):
     get_class = db.query(Arskurs).filter(Arskurs.name == arskurs.name).first()

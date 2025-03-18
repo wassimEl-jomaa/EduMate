@@ -175,14 +175,14 @@ class RecommendedResourceCreate(RecommendedResourceBase):
     description:Optional[str]
     homework_id: int
 
-class RecommendedResourceOut(RecommendedResourceBase):
+class RecommendedResourceOut(BaseModel):
     id: int
-    subject_id: int
     title: str
     url: str
-    description:str
+    description: Optional[str]
     created_at: datetime
     updated_at: datetime
+    homework_id: Optional[int]
 
     class Config:
         orm_mode: True

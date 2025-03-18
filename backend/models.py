@@ -3,6 +3,7 @@ from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Date, Text
 from sqlalchemy.orm import relationship
 from db_setup import Base
 
+
 class User(Base):
     __tablename__ = "user"
     id = Column(Integer, primary_key=True, index=True)
