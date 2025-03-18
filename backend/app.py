@@ -8,7 +8,7 @@ import crud
 import uvicorn
 from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
-from models import Arskurs, Homework, Role, Subject, User, Membership
+from models import Arskurs, Betyg, Homework, Role, Subject, User, Membership
 from schemas import MembershipCreate
 from schemas import UserOut, RoleOut
 
@@ -277,6 +277,18 @@ def update_betyg_view(betyg_id: int, betyg: BetygUpdate, database: Session = Dep
     """
     updated_betyg = crud.update_betyg(database, betyg_id, betyg)
     return updated_betyg
+@app.delete("/betyg/{betyg_id}", response_model=BetygOut)
+def delete_betyg(betyg_id: int, database: Session = Depends(get_db)):
+    """
+    Delete a betyg from the database.
+    """
+    db_betyg = database.query(Betyg).filter(Betyg.id == betyg_id).first()
+    if not db_betyg:
+        raise HTTPException(status_code=404, detail="Betyg not found")
+
+    database.delete(db_betyg)
+    database.commit()
+    return db_betyg
 @app.get("/meddelanden/user/{user_id}", response_model=List[MeddelandeOut])
 def get_meddelanden_by_user_view(user_id: int, database: Session = Depends(get_db)):
     """
@@ -318,6 +330,45 @@ def create_arskurs(arskurs: ArskursCreate, db: Session = Depends(get_db)):
     db.add(db_arskurs)
     db.commit()
     db.refresh(db_arskurs)
+    return db_arskurs
+@app.get("/arskurs/", response_model=List[ArskursSchema])
+def get_all_arskurs(database: Session = Depends(get_db)):
+    """
+    Retrieve all Årskurs from the database.
+    """
+    arskurs_list = database.query(Arskurs).all()
+    if not arskurs_list:
+        raise HTTPException(status_code=404, detail="No Årskurs found")
+    return arskurs_list
+@app.patch("/arskurs/{arskurs_id}", response_model=ArskursSchema)
+def update_arskurs(arskurs_id: int, arskurs: ArskursCreate, database: Session = Depends(get_db)):
+    """
+    Update an existing Årskurs in the database.
+    """
+    db_arskurs = database.query(Arskurs).filter(Arskurs.id == arskurs_id).first()
+    if not db_arskurs:
+        raise HTTPException(status_code=404, detail="Årskurs not found")
+
+    # Update fields
+    db_arskurs.name = arskurs.name
+    db_arskurs.description = arskurs.description
+    db_arskurs.skola = arskurs.skola
+    db_arskurs.klass = arskurs.klass
+
+    database.commit()
+    database.refresh(db_arskurs)
+    return db_arskurs
+@app.delete("/arskurs/{arskurs_id}", response_model=ArskursSchema)
+def delete_arskurs(arskurs_id: int, database: Session = Depends(get_db)):
+    """
+    Delete an Årskurs from the database.
+    """
+    db_arskurs = database.query(Arskurs).filter(Arskurs.id == arskurs_id).first()
+    if not db_arskurs:
+        raise HTTPException(status_code=404, detail="Årskurs not found")
+
+    database.delete(db_arskurs)
+    database.commit()
     return db_arskurs
 @app.get("/subjects/{subject_id}", response_model=SubjectOut)
 def get_subject_by_id(subject_id: int, database: Session = Depends(get_db)):
@@ -362,6 +413,20 @@ def delete_subject(subject_id: int, database: Session = Depends(get_db)):
 
     database.delete(db_subject)
     database.commit()
+    return db_subject
+@app.patch("/subjects/{subject_id}", response_model=SubjectOut)
+def update_subject(subject_id: int, subject: SubjectCreate, database: Session = Depends(get_db)):
+    """
+    Update an existing subject in the database.
+    """
+    db_subject = database.query(Subject).filter(Subject.id == subject_id).first()
+    if not db_subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    # Update fields
+    db_subject.name = subject.name
+    database.commit()
+    database.refresh(db_subject)
     return db_subject
 if __name__ == '__main__':
     uvicorn.run(app)
