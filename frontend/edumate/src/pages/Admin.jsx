@@ -50,7 +50,7 @@ const Admin = () => {
           </li>
           <li>
             <Link
-              to="/add-membership"
+              to="/manage-memberships"
               className="block text-lg text-blue-800 hover:text-blue-600"
             >
               Membership

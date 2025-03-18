@@ -15,6 +15,7 @@ import AddRole from "./pages/AddRole";
 import Profil from "./pages/Profil";
 import Admin from "./pages/Admin"; // Import the Admin component
 import ManageUsers from "./pages/ManageUsers";
+import ManageMemberships from "./pages/ManageMemberships";
 
 const App = () => {
   const [signedIn, setSignedIn] = useState(false);
@@ -53,6 +54,7 @@ const App = () => {
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/add-role" element={<AddRole />} />
         <Route path="/manage-users" element={<ManageUsers />} />
+        <Route path="/manage-memberships" element={<ManageMemberships />} />
       </Routes>
       <Footer />
     </div>

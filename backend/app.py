@@ -77,16 +77,13 @@ def update_user_by_id(user_id: int, user_params: UserInUpdate, database: Session
     updated_user = database.query(User).filter(User.id == user_id).first()
     return updated_user
 
-@app.post("/memberships/", response_model=MembershipOut)
-def create_membership(membership:str, database: Session = Depends(get_db)):
-    """
-    Create a new membership for a user.
-    """
+@app.post("/membership/", response_model=MembershipCreate)
+def create_membership_endpoint(membership: MembershipCreate, db: Session = Depends(get_db)):
+    # Call the crud function to create the membership
+    new_membership = crud.create_membership(db, membership)
     
+    return new_membership  # Return the created membership object
 
-    membership = crud.create_membership(database, membership)
-   
-    return membership  # Return the membership object
 @app.get("/memberships/", response_model=List[MembershipOut])
 def read_memberships(database: Session = Depends(get_db)):
     """
@@ -96,17 +93,19 @@ def read_memberships(database: Session = Depends(get_db)):
     if not memberships:
         raise HTTPException(status_code=404, detail="No memberships found")
     return memberships
-@app.patch("/memberships/{membership_id}", response_model=MembershipOut)
-def update_membership(membership_id: int, membership: MembershipUpdate, database: Session = Depends(get_db)):
+@app.put("/memberships/{membership_id}", response_model=MembershipOut)
+def replace_membership(membership_id: int, membership: MembershipCreate, database: Session = Depends(get_db)):
     """
-    Update an existing membership.
+    Replace an existing membership.
     """
     db_membership = database.query(Membership).filter(Membership.id == membership_id).first()
     if not db_membership:
         raise HTTPException(status_code=404, detail="Membership not found")
     
-    for key, value in membership.dict(exclude_unset=True).items():
-        setattr(db_membership, key, value)
+    # Replace all fields
+    db_membership.membership_type = membership.membership_type
+    db_membership.start_date = membership.start_date
+    db_membership.end_date = membership.end_date
     
     database.commit()
     database.refresh(db_membership)

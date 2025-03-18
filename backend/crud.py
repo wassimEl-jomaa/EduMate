@@ -210,12 +210,16 @@ def create_subject(database: Session, subject: SubjectCreate):
     database.refresh(db_subject)
     return db_subject    
 
-def create_membership(database: Session, membership_type:str):
-        membership = Membership(name=membership_type)
-        database.add(membership)
-        database.commit()
-        database.refresh(membership)
-        return membership
+def create_membership(database: Session, membership: MembershipCreate):
+    new_membership = Membership(
+        membership_type=membership.membership_type,
+        start_date=membership.start_date,
+        end_date=membership.end_date,
+    )
+    database.add(new_membership)
+    database.commit()
+    database.refresh(new_membership)
+    return new_membership
     
 def add_role(database: Session, role_name: str):
     role = Role(name=role_name)

@@ -2,15 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Union
 from datetime import date, datetime
 
-class MembershipOut(BaseModel):
-    id: int
-    membership_type: str
-    start_date: date
-    end_date: date
 
-    class Config:
-        orm_mode: True
-        from_attributes = True  # Allow the Pydantic model to read data from SQLAlchemy models
 
 class UserBase(BaseModel):
     username: Optional[str]
@@ -69,11 +61,18 @@ class MembershipCreate(BaseModel):
     membership_type: str
     start_date: date
     end_date: date
-    user_id: int  # Add user_id field
+
+    class Config:
+        from_attributes = True
+class MembershipOut(BaseModel):
+    id: int
+    membership_type: str
+    start_date: date
+    end_date: date
 
     class Config:
         orm_mode: True
-
+        from_attributes = True  # Allow the Pydantic model to read data from SQLAlchemy models
 class UserOut(UserBase):
     id: int
     arskurs: Optional[ArskursOut] = None
