@@ -6,18 +6,19 @@ import FeaturesSection from "./pages/FeaturesSection";
 import HowItWorksSection from "./pages/HowItWorksSection";
 import PlansSection from "./pages/PlansSection";
 import RegisterForm from "./pages/RegisterForm";
-import LoginForm from "./pages/LoginForm"; // Corrected this to match the component name
-import MinSida from "./pages/MinSida"; // Import the MinSida component
-import PersonligLärplan from "./pages/PersonligLärplan"; // Import PersonligLärplan
+import LoginForm from "./pages/LoginForm";
+import MinSida from "./pages/MinSida";
+import PersonligLärplan from "./pages/PersonligLärplan";
 import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
-import SideBar from "./components/SideBar";
-import Profil from "./pages/Profil"; // Import Profil component
-import Admin from "./pages/Admin"; // Import Admin component
+import AddRole from "./pages/AddRole";
+import Profil from "./pages/Profil";
+import Admin from "./pages/Admin"; // Import the Admin component
+import ManageUsers from "./pages/ManageUsers";
 
 const App = () => {
   const [signedIn, setSignedIn] = useState(false);
-  const [userId, setUserId] = useState(null); // Add userId state
+  const [userId, setUserId] = useState(null);
 
   return (
     <div className="bg-gray-100">
@@ -41,17 +42,17 @@ const App = () => {
               setSignedIn={setSignedIn}
               setUserId={setUserId}
             />
-          } // Pass setUserId to LoginForm
+          }
         />
-        <Route path="/login" element={<SideBar />} />
         <Route path="/register" element={<RegisterForm />} />
-        <Route path="/profil" element={<Profil userId={userId} />} />{" "}
-        <Route path="/MinSida" element={<MinSida userId={userId} />} />{" "}
-        <Route path="/Admin" element={<Admin userId={userId} />} />{" "}
-        {/* Pass userId to Profil */}
-        <Route path="/PersonligLärplan" element={<PersonligLärplan />} />
-        <Route path="/AboutUs" element={<AboutUs />} />
-        <Route path="/contactUs" element={<ContactUs />} />
+        <Route path="/profil" element={<Profil userId={userId} />} />
+        <Route path="/minsida" element={<MinSida userId={userId} />} />
+        <Route path="/admin" element={<Admin />} /> {/* Add the Admin route */}
+        <Route path="/personliglarplan" element={<PersonligLärplan />} />
+        <Route path="/aboutus" element={<AboutUs />} />
+        <Route path="/contactus" element={<ContactUs />} />
+        <Route path="/add-role" element={<AddRole />} />
+        <Route path="/manage-users" element={<ManageUsers />} />
       </Routes>
       <Footer />
     </div>

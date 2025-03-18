@@ -1,45 +1,90 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import HomeworkForm from "./HomeworkForm";
-import BetygForm from "./BetygForm";
-import MembershipForm from "./MembershipForm";
-import MeddelandeForm from "./MeddelandeForm";
+import React from "react";
+import { Link } from "react-router-dom";
 
-const AdminPage = () => {
-  const [homeworks, setHomeworks] = useState([]);
-  const [betygs, setBetygs] = useState([]);
-  const [memberships, setMemberships] = useState([]);
-  const [meddelanden, setMeddelanden] = useState([]);
-
-  useEffect(() => {
-    // Fetch data from the backend
-    axios.get("/api/homeworks").then((response) => setHomeworks(response.data));
-    axios.get("/api/betygs").then((response) => setBetygs(response.data));
-    axios
-      .get("/api/memberships")
-      .then((response) => setMemberships(response.data));
-    axios
-      .get("/api/meddelanden")
-      .then((response) => setMeddelanden(response.data));
-  }, []);
-
+const Admin = () => {
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <HomeworkForm homeworks={homeworks} setHomeworks={setHomeworks} />
-        <BetygForm betygs={betygs} setBetygs={setBetygs} />
-        <MembershipForm
-          memberships={memberships}
-          setMemberships={setMemberships}
-        />
-        <MeddelandeForm
-          meddelanden={meddelanden}
-          setMeddelanden={setMeddelanden}
-        />
+    <div className="flex h-screen">
+      {/* Sidebar */}
+      <div className="w-1/4 bg-blue-100 p-4">
+        <h2 className="text-2xl font-bold mb-6">Manage Panel</h2>
+        <ul className="space-y-4">
+          <li>
+            <Link
+              to="/manage-users"
+              className="block text-lg text-blue-800 hover:text-blue-600"
+            >
+              User
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/ManageUsers"
+              className="block text-lg text-blue-800 hover:text-blue-600"
+            >
+              Beytg
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/add-role"
+              className="block text-lg text-blue-800 hover:text-blue-600"
+            >
+              Meddelanden
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/add-role"
+              className="block text-lg text-blue-800 hover:text-blue-600"
+            >
+              Arskurs
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/add-role"
+              className="block text-lg text-blue-800 hover:text-blue-600"
+            >
+              Roles
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/add-membership"
+              className="block text-lg text-blue-800 hover:text-blue-600"
+            >
+              Membership
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/add-homework"
+              className="block text-lg text-blue-800 hover:text-blue-600"
+            >
+              Homework
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/add-subject"
+              className="block text-lg text-blue-800 hover:text-blue-600"
+            >
+              Subject
+            </Link>
+          </li>
+        </ul>
+      </div>
+
+      {/* Main Content */}
+      <div className="w-3/4 p-6">
+        <h1 className="text-3xl font-bold mb-4">Welcome to the Admin Page</h1>
+        <p className="text-lg text-gray-700">
+          Select an option from the sidebar to manage roles, memberships,
+          homework, or subjects.
+        </p>
       </div>
     </div>
   );
 };
 
-export default AdminPage;
+export default Admin;

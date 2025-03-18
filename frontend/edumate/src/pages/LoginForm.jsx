@@ -11,12 +11,11 @@ export default function LoginForm({ signedIn, setSignedIn, setUserId }) {
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent page reload on form submit
 
-    // Simple validation (you can customize this)
+    // Simple validation
     if (!email || !password) {
       setErrorMessage("Vänligen fyll i både e-post och lösenord.");
     } else {
       setErrorMessage(""); // Clear error message if form is valid
-      // Proceed with login logic (e.g., API request)
       try {
         const response = await axios.post(
           "http://localhost:8000/get_user_by_email_and_password",
@@ -25,11 +24,23 @@ export default function LoginForm({ signedIn, setSignedIn, setUserId }) {
             password,
           }
         );
-        setUserId(response.data.id); // Set userId
+
+        const { id, role } = response.data; // Extract user ID and role from the response
+        setUserId(id); // Set userId
         setSignedIn(true);
+        console.log("Response Data:", response.data);
+        console.log("Role ID:", role.id);
+
+        // Redirect based on role
+        if (role.name === "Admin") {
+          // Check the name property of the role object
+          navigate("/admin"); // Redirect to admin page if the user is an admin
+        } else {
+          navigate("/minsida"); // Redirect to the user's personal page otherwise
+        }
       } catch (error) {
         console.error("Error logging in:", error);
-        alert("Fel användarnamn eller lösenord");
+        setErrorMessage("Fel användarnamn eller lösenord");
       }
     }
   };
