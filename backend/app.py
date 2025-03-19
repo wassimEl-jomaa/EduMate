@@ -186,7 +186,7 @@ def delete_role(role_id: int, database: Session = Depends(get_db)):
     return db_role
 
 # Create homework
-@app.post("/homework/", response_model=HomeworkOut)
+@app.post("/homeworks/", response_model=HomeworkOut)
 def create_homework_view(homework: HomeworkCreate, database: Session = Depends(get_db)):
     user = database.query(User).filter(User.id == homework.user_id).first()
     if not user:
@@ -207,7 +207,7 @@ def create_homework_view(homework: HomeworkCreate, database: Session = Depends(g
     return new_homework
 
 # Get all homeworks
-@app.get("/homework/", response_model=List[HomeworkOut])
+@app.get("/homeworks/", response_model=List[HomeworkOut])
 def get_homeworks_view(database: Session = Depends(get_db)):
     homeworks = crud.get_homeworks(database)
     if not homeworks:
@@ -236,14 +236,7 @@ def update_homework_by_id(homework_id: int, homework: HomeworkInUpdate, database
     database.commit()
     database.refresh(db_homework)
     return db_homework
-# Get homeworks by subject ID
-@app.get("/homeworks/subject/{subject_id}", response_model=List[HomeworkOut])
-def get_homework_by_subject_view(subject_id: int, database: Session = Depends(get_db)):
-    homeworks = crud.get_homework_by_subject(database, subject_id)
-    if not homeworks:
-        raise HTTPException(status_code=404, detail="No homeworks found for this subject")
-    
-    return homeworks
+
 @app.delete("/homeworks/{homework_id}/")
 def delete_homework(homework_id: int, database: Session = Depends(get_db)):
     homework = database.query(Homework).filter(Homework.id == homework_id).first()
@@ -331,6 +324,12 @@ def update_betyg_view(betyg_id: int, betyg: BetygUpdate, database: Session = Dep
     """
     updated_betyg = crud.update_betyg(database, betyg_id, betyg)
     return updated_betyg
+@app.get("/meddelanden/", response_model=List[MeddelandeOut])
+def get_all_meddelanden(database: Session = Depends(get_db)):
+    """
+    Fetch all meddelanden.
+    """
+    return database.query(Meddelande).all()
 @app.delete("/betyg/{betyg_id}", response_model=BetygOut)
 def delete_betyg(betyg_id: int, database: Session = Depends(get_db)):
     """
@@ -370,7 +369,7 @@ def delete_meddelande(meddelande_id: int, database: Session = Depends(get_db)):
     database.delete(db_meddelande)
     database.commit()
     return db_meddelande
-@app.patch("/meddelanden/{meddelande_id}", response_model=MeddelandeOut)
+@app.put("/meddelanden/{meddelande_id}/", response_model=MeddelandeOut)
 def update_meddelande(meddelande_id: int, meddelande: MeddelandeCreate, database: Session = Depends(get_db)):
     """
     Update an existing meddelande in the database.
@@ -383,6 +382,7 @@ def update_meddelande(meddelande_id: int, meddelande: MeddelandeCreate, database
     db_meddelande.message = meddelande.message
     db_meddelande.description = meddelande.description
     db_meddelande.read_status = meddelande.read_status
+    db_meddelande.homework_id = meddelande.homework_id
 
     database.commit()
     database.refresh(db_meddelande)

@@ -20,7 +20,7 @@ const ManageHomework = () => {
   useEffect(() => {
     const fetchHomeworks = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/homework/");
+        const response = await axios.get("http://localhost:8000/homeworks/");
         setHomeworks(response.data);
       } catch (error) {
         console.error("Error fetching homeworks:", error);
@@ -63,7 +63,7 @@ const ManageHomework = () => {
       } else {
         // Add new homework
         const response = await axios.post(
-          "http://localhost:8000/homework/",
+          "http://localhost:8000/homeworks/",
           homeworkData
         );
         setHomeworks((prevHomeworks) => [...prevHomeworks, response.data]);
