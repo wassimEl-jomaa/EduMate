@@ -84,12 +84,20 @@ def update_user_by_id(user_id: int, user_params: UserInUpdate, database: Session
     updated_user = database.query(User).filter(User.id == user_id).first()
     return updated_user
 
-@app.post("/membership/", response_model=MembershipCreate)
-def create_membership_endpoint(membership: MembershipCreate, db: Session = Depends(get_db)):
-    # Call the crud function to create the membership
-    new_membership = crud.create_membership(db, membership)
-    
-    return new_membership  # Return the created membership object
+@app.post("/memberships/", response_model=MembershipOut)
+def create_membership(membership: MembershipCreate, database: Session = Depends(get_db)):
+    """
+    Create a new membership in the database.
+    """
+    new_membership = Membership(
+        membership_type=membership.membership_type,
+        start_date=membership.start_date,
+        end_date=membership.end_date,
+    )
+    database.add(new_membership)
+    database.commit()
+    database.refresh(new_membership)
+    return new_membership
 
 @app.get("/memberships/", response_model=List[MembershipOut])
 def read_memberships(database: Session = Depends(get_db)):
