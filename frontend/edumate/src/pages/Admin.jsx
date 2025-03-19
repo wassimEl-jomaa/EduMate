@@ -58,7 +58,7 @@ const Admin = () => {
           </li>
           <li>
             <Link
-              to="/add-homework"
+              to="/manage-homework"
               className="block text-lg text-blue-800 hover:text-blue-600"
             >
               Homework

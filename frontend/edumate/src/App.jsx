@@ -18,6 +18,7 @@ import ManageUsers from "./pages/ManageUsers";
 import ManageMemberships from "./pages/ManageMemberships";
 import ManageArskurs from "./pages/ManageArskurs";
 import ManageMeddelanden from "./pages/ManageMeddelanden";
+import ManageHomework from "./pages/ManageHomework";
 
 import ManageBetyg from "./pages/ManageBetyg";
 import ManageSubjects from "./pages/ManageSubjects";
@@ -63,6 +64,7 @@ const App = () => {
         <Route path="/betyg" element={<ManageBetyg />} />
         <Route path="/manage-subjects" element={<ManageSubjects />} />
         <Route path="/manage-meddelanden" element={<ManageMeddelanden />} />
+        <Route path="/manage-homework" element={<ManageHomework />} />
       </Routes>
       <Footer />
     </div>

@@ -207,7 +207,7 @@ def create_homework_view(homework: HomeworkCreate, database: Session = Depends(g
     return new_homework
 
 # Get all homeworks
-@app.get("/homeworks/", response_model=List[HomeworkOut])
+@app.get("/homework/", response_model=List[HomeworkOut])
 def get_homeworks_view(database: Session = Depends(get_db)):
     homeworks = crud.get_homeworks(database)
     if not homeworks:
@@ -244,30 +244,14 @@ def get_homework_by_subject_view(subject_id: int, database: Session = Depends(ge
         raise HTTPException(status_code=404, detail="No homeworks found for this subject")
     
     return homeworks
-@app.delete("/homeworks/{homework_id}", response_model=HomeworkOut)
+@app.delete("/homeworks/{homework_id}/")
 def delete_homework(homework_id: int, database: Session = Depends(get_db)):
-    """
-    Delete a homework from the database.
-    """
-    db_homework = (
-        database.query(Homework)
-        .options(
-            joinedload(Homework.user),
-            joinedload(Homework.subject),
-            joinedload(Homework.betyg),
-            joinedload(Homework.meddelande),
-            joinedload(Homework.filuppladdning),
-            joinedload(Homework.recommended_resource),
-        )
-        .filter(Homework.id == homework_id)
-        .first()
-    )
-    if not db_homework:
+    homework = database.query(Homework).filter(Homework.id == homework_id).first()
+    if not homework:
         raise HTTPException(status_code=404, detail="Homework not found")
-
-    database.delete(db_homework)
+    database.delete(homework)
     database.commit()
-    return db_homework
+    return {"message": "Homework deleted successfully"}
 # Create recommended resource
 @app.post("/recommended_resources/", response_model=RecommendedResourceOut)
 def create_recommended_resource_view(resource: RecommendedResourceCreate, database: Session = Depends(get_db)):
