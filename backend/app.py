@@ -215,7 +215,7 @@ def create_homework_view(homework: HomeworkCreate, database: Session = Depends(g
     return new_homework
 
 # Get all homeworks
-@app.get("/homeworks/", response_model=List[HomeworkOut])
+@app.get("/homeworks/", response_model=HomeworkOut)
 def get_homeworks_view(database: Session = Depends(get_db)):
     homeworks = crud.get_homeworks(database)
     if not homeworks:

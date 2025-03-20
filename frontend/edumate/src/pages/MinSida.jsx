@@ -107,6 +107,10 @@ const MinSida = ({ userId }) => {
                     <strong>Beskrivning:</strong> {homework.description}
                   </p>
                   <p>
+                    <strong>Filuppladdning:</strong>{" "}
+                    {homework.filuppladdning?.filepath || "Ej betygsatt"}
+                  </p>
+                  <p>
                     <strong>Förfallodatum:</strong> {homework.due_date}
                   </p>
                   <p>
@@ -121,14 +125,28 @@ const MinSida = ({ userId }) => {
                   <p>
                     <strong>Meddelande:</strong> {homework.meddelande?.message}
                   </p>
+
                   <p>
                     <strong>Betyg:</strong>{" "}
                     {homework.betyg?.grade || "Ej betygsatt"}
                   </p>
                   <p>
-                    <strong>Filuppladdning:</strong>{" "}
-                    {homework.filuppladdning?.filepath || "Ej betygsatt"}
+                    <strong>Meddelande:</strong>{" "}
+                    {homework.recommended_resources?.title || "Ej betygsatt"}
                   </p>
+                  <h2 className="text-2xl font-bold mb-4">
+                    Rekommenderade Resurser
+                  </h2>
+                  <div className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center">
+                    <p>
+                      <strong>Title:</strong>{" "}
+                      {homework.recommended_resources?.title || "Ej betygsatt"}
+                    </p>
+                    <p>
+                      <strong>Url:</strong>{" "}
+                      {homework.recommended_resources?.url || "Ej betygsatt"}
+                    </p>
+                  </div>
                   {homework.status !== "Klar" && (
                     <button
                       onClick={() => handleCompleteHomework(homework.id)}
@@ -140,26 +158,6 @@ const MinSida = ({ userId }) => {
                 </div>
               ))
             )}
-          </div>
-        </div>
-        {/* Recommended Resources Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Rekommenderade Resurser</h2>
-          <div className="space-y-4">
-            {homeworkList.map((homework) => (
-              <div
-                key={homework.id}
-                className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center"
-              >
-                <div>
-                  <p>
-                    <strong>Meddelande:</strong>{" "}
-                    {homework.recommended_resources?.message}
-                  </p>
-                  <p className="text-gray-500">Typ: {homework.grade}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>

@@ -182,7 +182,7 @@ class RecommendedResourceOut(BaseModel):
     description: Optional[str]
     created_at: datetime
     updated_at: datetime
-    homework_id: Optional[int]
+    homework_id: int
 
     class Config:
         orm_mode: True
