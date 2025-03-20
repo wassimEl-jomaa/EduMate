@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate for programmatic routing
-import axios from "axios"; // Import axios
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function LoginForm({ signedIn, setSignedIn, setUserId }) {
   const [email, setEmail] = useState(""); // State for email
@@ -25,15 +25,15 @@ export default function LoginForm({ signedIn, setSignedIn, setUserId }) {
           }
         );
 
-        const { id, role } = response.data; // Extract user ID and role from the response
-        setUserId(id); // Set userId
+        const { token, user_id, role } = response.data; // Extract token, user ID, and role from the response
+        localStorage.setItem("token", token); // Store the token in localStorage
+        setUserId(user_id); // Set userId
         setSignedIn(true);
         console.log("Response Data:", response.data);
         console.log("Role ID:", role.id);
 
         // Redirect based on role
         if (role.name === "Admin") {
-          // Check the name property of the role object
           navigate("/admin"); // Redirect to admin page if the user is an admin
         } else {
           navigate("/minsida"); // Redirect to the user's personal page otherwise

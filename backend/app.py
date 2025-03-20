@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,6 +6,10 @@ from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 from db_setup import get_db, create_databases
+from models import User, Token
+from auth import generate_token, get_password_hash, token_expiry
+from passlib.context import CryptContext
+from db_setup import get_db
 import crud
 import uvicorn
 from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, UserInUpdate
@@ -23,6 +28,50 @@ app.add_middleware(
         allow_credentials=True,
     )
 create_databases()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+
+
+@app.post("/login")
+def login(email: str, password: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if not user or not verify_password(password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Generate a new token
+    token = generate_token()
+    expires_at = token_expiry(hours=1)
+
+    # Save the token in the database
+    db_token = Token(token=token, user_id=user.id, expires_at=expires_at)
+    db.add(db_token)
+    db.commit()
+
+    return {"token": token, "expires_at": expires_at}
+@app.post("/logout")
+def logout(token: str, db: Session = Depends(get_db)):
+    db_token = db.query(Token).filter(Token.token == token).first()
+    if not db_token:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    db.delete(db_token)
+    db.commit()
+    return {"message": "Logged out successfully"}
+# Dependency to get the current user based on the token
+def get_current_user(token: str, db: Session = Depends(get_db)):
+    db_token = db.query(Token).filter(Token.token == token).first()
+    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return db_token.user
+
+# Protected route example
+@app.get("/protected")
+def protected_route(current_user: User = Depends(get_current_user)):
+    return {"message": f"Hello, {current_user.username}!"}
 
 @app.get("/users/", response_model=List[UserOut])
 def read_users(database: Session = Depends(get_db)):
@@ -45,26 +94,43 @@ def get_user_by_id(user_id: int, database: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@app.post("/users/", response_model=UserOut)  # Use UserOut for response model
-def add_users(
-    user_params: UserIn,  # Accept UserOut for validation (not SQLAlchemy User)
-    database: Session = Depends(get_db)
-):
+@app.post("/users/", response_model=UserOut)
+def add_users(user_params: UserIn, database: Session = Depends(get_db)):
     """
     Create a new user in the database.
     """
-    # Convert Pydantic model to SQLAlchemy model and add to the database
-    new_user = User(**user_params.model_dump())  # Use model_dump instead of dict
+    # Hash the password before saving
+    hashed_password = get_password_hash(user_params.password)
+    new_user = User(
+        username=user_params.username,
+        first_name=user_params.first_name,
+        last_name=user_params.last_name,
+        email=user_params.email,
+        password=hashed_password,  # Store the hashed password
+        phone_number=user_params.phone_number,
+      
+    )
     database.add(new_user)
     database.commit()
     database.refresh(new_user)
-    return new_user  # Return SQLAlchemy model, but response model will be UserOut
+    return new_user
 @app.post("/get_user_by_email_and_password")
-def get_user_by_email(user: GetUser, database: Session = Depends(get_db)):
-    user = crud.get_user_by_email_and_password(database, user.email, user.password)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found or incorrect password")
-    return user
+def get_user_by_email_and_password(user: GetUser, db: Session = Depends(get_db)):
+    # Fetch the user by email
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user or not verify_password(user.password, db_user.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Generate a token
+    token = generate_token()
+    expires_at = token_expiry(hours=1)
+
+    # Save the token in the database
+    db_token = Token(token=token, user_id=db_user.id, expires_at=expires_at)
+    db.add(db_token)
+    db.commit()
+
+    return {"token": token, "user_id": db_user.id, "role": db_user.role}
 @app.delete("/users/{user_id}")
 def delete_user_view(user_id: int, database: Session = Depends(get_db)):
     """

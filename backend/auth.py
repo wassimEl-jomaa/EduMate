@@ -1,48 +1,46 @@
-from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+import secrets
 from datetime import datetime, timedelta, timezone
-from jose import JWTError, jwt
+from fastapi import Depends, HTTPException
+from sqlalchemy.orm import Session
+from db_setup import get_db
+from models import Token, User
 from passlib.context import CryptContext
 
-# Secret key for signing JWTs
-SECRET_KEY = "your_secret_key_hereWasim"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
+def get_password_hash(password: str) -> str:
+    """Hash a plain text password."""
     return pwd_context.hash(password)
-# OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def verify_access_token(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
-        return None
+# Generate a random token
+def generate_token():
+    """Generate a random token."""
+    return secrets.token_hex(32)  # Generates a 64-character random token
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    payload = verify_access_token(token)
-    if not payload:
+# Token expiry utility
+def token_expiry(hours=1):
+    """Set token expiration time."""
+    return datetime.now(timezone.utc) + timedelta(hours=hours)
+
+# Create a token and save it in the database
+def create_database_token(user: User, db: Session, hours=1):
+    """Create a token for a user and save it in the database."""
+    token = generate_token()
+    expires_at = token_expiry(hours)
+    db_token = Token(token=token, user_id=user.id, expires_at=expires_at)
+    db.add(db_token)
+    db.commit()
+    return {"token": token, "expires_at": expires_at}
+
+# Validate a token from the database
+def validate_database_token(token: str, db: Session):
+    """Validate a token by checking the database."""
+    db_token = db.query(Token).filter(Token.token == token).first()
+    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return payload
+    return db_token.user
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def verify_access_token(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
-        return None
+# Dependency to get the current user based on the token
+def get_current_user(token: str, db: Session = Depends(get_db)):
+    """Get the current user from the token."""
+    return validate_database_token(token, db)

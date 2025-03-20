@@ -9,10 +9,6 @@ const RegisterForm = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    school: "",
-    klass: "",
-    grade: "",
-    subjects: [],
   });
 
   // Skapa en state för eventuella fel
@@ -26,20 +22,6 @@ const RegisterForm = () => {
       [name]: value,
     });
   };
-
-  // // Hantera förändring för checkboxar
-  // const handleSubjectChange = (e) => {
-  //   const { value, checked } = e.target;
-  //   setFormData((prevData) => {
-  //     const updatedSubjects = checked
-  //       ? [...prevData.subjects, value]
-  //       : prevData.subjects.filter((subject) => subject !== value);
-  //     return {
-  //       ...prevData,
-  //       subjects: updatedSubjects,
-  //     };
-  //   });
-  // };
 
   // Hantera form submission
   const handleSubmit = async (e) => {

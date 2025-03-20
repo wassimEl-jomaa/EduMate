@@ -1,5 +1,5 @@
 from datetime import datetime,timezone
-from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Date, Text
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Date, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from db_setup import Base
 
@@ -20,6 +20,14 @@ class User(Base):
     membership = relationship("Membership")
     role = relationship("Role")
     arskurs = relationship("Arskurs")
+    tokens = relationship("Token", back_populates="user")
+class Token(Base):
+    __tablename__ = "token"
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    expires_at = Column(DateTime, nullable=False)  # Token expiration time
+    user = relationship("User", back_populates="tokens")
 
 class Role(Base):
     __tablename__ = "role"
@@ -39,11 +47,13 @@ class Membership(Base):
 class Arskurs(Base):
     __tablename__ = "arskurs"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     skola = Column(String)  # Add skola field
     klass = Column(String)  # Add klass field
-
+    __table_args__ = (
+        UniqueConstraint("name", "skola", "klass", name="unique_name_skola_klass"),
+    )
 
 class Homework(Base):
     __tablename__ = "homework"

@@ -19,7 +19,7 @@ class UserIn(BaseModel):
     email: str
     password: str
     phone_number: str
-
+    
 class Arskurs(BaseModel):
     name: str
     description: str
