@@ -78,10 +78,27 @@ const Admin = () => {
       {/* Main Content */}
       <div className="w-3/4 p-6">
         <h1 className="text-3xl font-bold mb-4">Welcome to the Admin Page</h1>
-        <p className="text-lg text-gray-700">
-          Select an option from the sidebar to manage roles, memberships,
-          homework, or subjects.
-        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-blue-200 p-4 rounded-lg shadow-md">
+            <h3 className="text-xl font-bold">Total Users</h3>
+            <p className="text-2xl">4</p>
+          </div>
+          <div className="bg-green-200 p-4 rounded-lg shadow-md">
+            <h3 className="text-xl font-bold">Active Memberships</h3>
+            <p className="text-2xl">4</p>
+          </div>
+        </div>
+        <div className="mt-6">
+          <button
+            onClick={() => {
+              localStorage.removeItem("token");
+              window.location.href = "/login";
+            }}
+            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   );

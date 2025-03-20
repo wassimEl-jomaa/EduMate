@@ -44,8 +44,8 @@ const ManageUsers = () => {
     try {
       if (editingUserId) {
         // Update user
-        const response = await axios.put(
-          `http://localhost:8000/users/${editingUserId}/`,
+        const response = await axios.patch(
+          `http://localhost:8000/users/${editingUserId}`,
           userData
         );
         setUsers((prevUsers) =>
