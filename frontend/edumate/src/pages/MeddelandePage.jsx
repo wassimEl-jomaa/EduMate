@@ -37,6 +37,16 @@ const MeddelandePage = ({ userId }) => {
       .catch((err) => {
         console.error("Failed to update status:", err);
       });
+    axios
+      .put(
+        `http://127.0.0.1:8000/meddelanden/${meddelandeId}/?mark_as_read=true`
+      )
+      .then((response) => {
+        console.log("Meddelande marked as read:", response.data);
+      })
+      .catch((error) => {
+        console.error("Failed to mark as read:", error);
+      });
   };
 
   if (loading) {

@@ -449,19 +449,28 @@ def delete_meddelande(meddelande_id: int, database: Session = Depends(get_db)):
     database.commit()
     return db_meddelande
 @app.put("/meddelanden/{meddelande_id}/", response_model=MeddelandeOut)
-def update_meddelande(meddelande_id: int, meddelande: MeddelandeCreate, database: Session = Depends(get_db)):
+def update_or_mark_as_read(
+    meddelande_id: int,
+    meddelande: MeddelandeCreate = None,  # Optional payload for full update
+    mark_as_read: bool = False,  # Query parameter to mark as read
+    database: Session = Depends(get_db),
+):
     """
-    Update an existing meddelande in the database.
+    Update an existing meddelande or mark it as read.
     """
     db_meddelande = database.query(Meddelande).filter(Meddelande.id == meddelande_id).first()
     if not db_meddelande:
         raise HTTPException(status_code=404, detail="Meddelande not found")
 
-    # Update fields
-    db_meddelande.message = meddelande.message
-    db_meddelande.description = meddelande.description
-    db_meddelande.read_status = meddelande.read_status
-    db_meddelande.homework_id = meddelande.homework_id
+    if mark_as_read:
+        # Mark the meddelande as read
+        db_meddelande.read_status = "Read"
+    elif meddelande:
+        # Update fields if payload is provided
+        db_meddelande.message = meddelande.message
+        db_meddelande.description = meddelande.description
+        db_meddelande.read_status = meddelande.read_status
+        db_meddelande.homework_id = meddelande.homework_id
 
     database.commit()
     database.refresh(db_meddelande)
