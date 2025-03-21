@@ -51,7 +51,7 @@ const ManageHomework = () => {
       if (editingHomeworkId) {
         // Update homework
         const response = await axios.put(
-          `http://localhost:8000/homework/${editingHomeworkId}/`,
+          `http://localhost:8000/homeworks/${editingHomeworkId}/`,
           homeworkData
         );
         setHomeworks((prevHomeworks) =>

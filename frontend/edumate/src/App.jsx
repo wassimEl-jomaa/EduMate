@@ -19,9 +19,10 @@ import ManageMemberships from "./pages/ManageMemberships";
 import ManageArskurs from "./pages/ManageArskurs";
 import ManageMeddelanden from "./pages/ManageMeddelanden";
 import ManageHomework from "./pages/ManageHomework";
-
+import MeddelandePage from "./pages/MeddelandePage";
 import ManageBetyg from "./pages/ManageBetyg";
 import ManageSubjects from "./pages/ManageSubjects";
+
 const App = () => {
   const [signedIn, setSignedIn] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -65,6 +66,10 @@ const App = () => {
         <Route path="/manage-subjects" element={<ManageSubjects />} />
         <Route path="/manage-meddelanden" element={<ManageMeddelanden />} />
         <Route path="/manage-homework" element={<ManageHomework />} />
+        <Route
+          path="/meddelande"
+          element={<MeddelandePage userId={userId} />}
+        />
       </Routes>
       <Footer />
     </div>

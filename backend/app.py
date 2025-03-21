@@ -281,12 +281,12 @@ def create_homework_view(homework: HomeworkCreate, database: Session = Depends(g
     return new_homework
 
 # Get all homeworks
-@app.get("/homeworks/", response_model=HomeworkOut)
+@app.get("/homeworks/", response_model=List[HomeworkOut])
 def get_homeworks_view(database: Session = Depends(get_db)):
-    homeworks = crud.get_homeworks(database)
+    homeworks = database.query(Homework).all()
     if not homeworks:
         raise HTTPException(status_code=404, detail="No homeworks found")
-    return homeworks
+    return homeworks  # FastAPI will automatically convert SQLAlchemy objects to Pydantic models
 
 # Get homeworks by user ID
 @app.get("/homeworks/{user_id}", response_model=List[HomeworkOut])
@@ -417,13 +417,18 @@ def delete_betyg(betyg_id: int, database: Session = Depends(get_db)):
     database.commit()
     return db_betyg
 @app.get("/meddelanden/user/{user_id}", response_model=List[MeddelandeOut])
-def get_meddelanden_by_user_view(user_id: int, database: Session = Depends(get_db)):
+def get_meddelanden_for_user(user_id: int, db: Session = Depends(get_db)):
     """
-    Retrieve all meddelanden for a specific user.
+    Fetch all Meddelanden for a specific user.
     """
-    meddelanden = crud.get_meddelanden_by_user(database, user_id)
+    meddelanden = (
+        db.query(Meddelande)
+        .join(Homework)
+        .filter(Homework.user_id == user_id)
+        .all()
+    )
     if not meddelanden:
-        raise HTTPException(status_code=404, detail="No meddelanden found for this user")
+        raise HTTPException(status_code=404, detail="No messages found for this user")
     return meddelanden
 @app.post("/meddelanden/", response_model=MeddelandeOut)
 def create_meddelande_view(meddelande: MeddelandeCreate, database: Session = Depends(get_db)):

@@ -1,14 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function Header({ signedIn, setSignedIn }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const logout = () => {
     setSignedIn(false); // Log the user out
   };
 
+  // Toggle mobile menu visibility
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   return (
-    <header className="bg-blue-100 py-2 mb-2">
-      <nav className="mx-auto flex justify-between items-center">
+    <header className="bg-blue-100 py-4 mb-4 shadow-lg">
+      <nav className="mx-auto flex justify-between items-center px-6 md:px-12">
         {/* Left section: Logo, Home, About Us */}
         <div className="flex items-center space-x-6">
           <img
@@ -16,76 +23,143 @@ export default function Header({ signedIn, setSignedIn }) {
             alt="Logo"
             className="h-12 w-auto"
           />
-          <Link
-            to="/"
-            className="font-bold font-sans text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all mr-4 "
-          >
-            Hem
-          </Link>
-          <Link
-            to="/aboutUs"
-            className="font-bold font-sans text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
-          >
-            Om Oss
-          </Link>
+          <div className="hidden md:flex space-x-6">
+            <Link
+              to="/"
+              className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+            >
+              Hem
+            </Link>
+            <Link
+              to="/aboutUs"
+              className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+            >
+              Om Oss
+            </Link>
+          </div>
         </div>
 
-        {/* Right section: Login and Register */}
-        {!signedIn ? (
-          <ul className="flex space-x-4 text-white ml-auto">
-            <li>
+        {/* Right section: Login/Register or Profile/Logout */}
+        <div className="hidden md:flex space-x-6 ml-auto">
+          {!signedIn ? (
+            <div className="flex space-x-6">
               <Link
                 to="/admin"
-                className="font-bold font-sans text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all mr-4 "
+                className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
                 Admin
               </Link>
               <Link
                 to="/login"
-                className="font-bold font-sans text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all "
+                className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
                 Logga in
               </Link>
-            </li>
-            <li>
               <Link
                 to="/register"
-                className="font-bold font-sans text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all mr-4"
+                className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
                 Registrera
               </Link>
-            </li>
-          </ul>
-        ) : (
-          <ul className="flex space-x-4 text-white ml-auto">
-            <li>
+            </div>
+          ) : (
+            <div className="flex space-x-6">
               <Link
                 to="/Profil"
-                className="font-bold font-sans text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 "
+                className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
                 Profil
               </Link>
-            </li>
-            <li>
               <Link
                 to="/MinSida"
-                className="font-bold font-sans text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 "
+                className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
                 Min sida
               </Link>
-            </li>
-            <li>
               <Link
                 to="/"
                 onClick={logout}
-                className="font-bold font-sans text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all mr-4"
+                className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
                 Logga ut
               </Link>
-            </li>
-          </ul>
-        )}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Menu Button */}
+        <div className="md:hidden flex items-center">
+          <button
+            onClick={toggleMobileMenu}
+            className="text-white focus:outline-none"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 12h18M3 6h18M3 18h18"></path>
+            </svg>
+          </button>
+        </div>
       </nav>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-blue-100">
+          <div className="px-6 py-4 space-y-4">
+            {!signedIn ? (
+              <>
+                <Link
+                  to="/admin"
+                  className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+                >
+                  Admin
+                </Link>
+                <Link
+                  to="/login"
+                  className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+                >
+                  Logga in
+                </Link>
+                <Link
+                  to="/register"
+                  className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+                >
+                  Registrera
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/Profil"
+                  className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+                >
+                  Profil
+                </Link>
+                <Link
+                  to="/MinSida"
+                  className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+                >
+                  Min sida
+                </Link>
+                <Link
+                  to="/"
+                  onClick={logout}
+                  className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+                >
+                  Logga ut
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

@@ -45,7 +45,7 @@ const SideBar = () => {
             </li>
             <li>
               <Link
-                to="/contact"
+                to="/meddelande"
                 className="block py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
               >
                 Meddelande
