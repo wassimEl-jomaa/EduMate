@@ -13,14 +13,16 @@ class User(Base):
     email = Column(String)
     password = Column(String)
     phone_number = Column(String)
+    arskurs_id = Column(Integer, ForeignKey('arskurs.id'), default=0)
+    role_id = Column(Integer, ForeignKey('role.id'), default=0)
+    membership_id = Column(Integer, ForeignKey('membership.id'))
 
-    arskurs_id = Column(Integer, ForeignKey('arskurs.id'), default=0)  # Foreign key referencing the Arskurs table
-    role_id = Column(Integer, ForeignKey('role.id'), default=0)  # Foreign key referencing the Role table
-    membership_id = Column(Integer, ForeignKey('membership.id'))  # Foreign key referencing the Role table
     membership = relationship("Membership")
     role = relationship("Role")
     arskurs = relationship("Arskurs")
     tokens = relationship("Token", back_populates="user")
+    teacher = relationship("Teacher", back_populates="user", uselist=False)  # One-to-one relationship with Teacher
+    betyg = relationship("Betyg", back_populates="user")
 class Token(Base):
     __tablename__ = "token"
     id = Column(Integer, primary_key=True, index=True)
@@ -29,6 +31,19 @@ class Token(Base):
     expires_at = Column(DateTime, nullable=False)  # Token expiration time
     user = relationship("User", back_populates="tokens")
 
+class Teacher(Base):
+    __tablename__ = "teacher"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)  # ForeignKey to User table
+    subject_id = Column(Integer, ForeignKey('subject.id'), nullable=True)  # Optional: Subject the teacher teaches
+    qualifications = Column(Text, nullable=True)  # Teacher's qualifications
+
+    user = relationship("User", back_populates="teacher")  # Use back_populates instead of backref
+    subject = relationship("Subject", backref="teachers")  # Optional: Subject table if you want to associate teachers with subjects
+
+    def __repr__(self):
+        return f"<Teacher(id={self.id}, user_id={self.user_id}, qualifications={self.qualifications})>"
 class Role(Base):
     __tablename__ = "role"
     
@@ -65,6 +80,10 @@ class Homework(Base):
     status = Column(String, default="Pending")
     priority = Column(String, default="Normal")
 
+    # Direct reference to Teacher table instead of User
+    teacher_id = Column(Integer, ForeignKey("teacher.id"))
+    teacher = relationship("Teacher", backref="homeworks")
+
     user_id = Column(Integer, ForeignKey("user.id"))
     user = relationship("User")
 
@@ -74,9 +93,9 @@ class Homework(Base):
     meddelande = relationship("Meddelande", back_populates="homework", uselist=False)
     filuppladdning = relationship("Filuppladdning", back_populates="homework", uselist=False)
     recommended_resource = relationship("RecommendedResource", back_populates="homework", uselist=False)
-def __repr__(self):
-        return f"<Homework(id={self.id}, title={self.title}, due_date={self.due_date}, status={self.status})>"
 
+    def __repr__(self):
+        return f"<Homework(id={self.id}, title={self.title}, due_date={self.due_date}, status={self.status})>"
 class Subject(Base):
     __tablename__ = "subject"
 
@@ -95,6 +114,8 @@ class Betyg(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     homework_id = Column(Integer, ForeignKey("homework.id"))
     homework = relationship("Homework")    
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    user = relationship("User", back_populates="betyg")
 
 class Filuppladdning(Base):
     __tablename__ = "filuppladdning"

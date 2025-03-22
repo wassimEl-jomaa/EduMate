@@ -6,13 +6,13 @@ from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 from db_setup import get_db, create_databases
-from models import User, Token
+from models import Teacher, User, Token
 from auth import generate_token, get_password_hash, token_expiry
 from passlib.context import CryptContext
 from db_setup import get_db
 import crud
 import uvicorn
-from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, UserInUpdate
+from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, TeacherCreate, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
 from models import Arskurs, Betyg, Filuppladdning, Homework, Meddelande, RecommendedResource, Role, Subject, User, Membership
 from schemas import MembershipCreate
@@ -99,6 +99,11 @@ def add_users(user_params: UserIn, database: Session = Depends(get_db)):
     """
     Create a new user in the database.
     """
+    # Check if the email is already registered
+    existing_user = database.query(User).filter(User.email == user_params.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
     # Hash the password before saving
     hashed_password = get_password_hash(user_params.password)
     new_user = User(
@@ -108,7 +113,6 @@ def add_users(user_params: UserIn, database: Session = Depends(get_db)):
         email=user_params.email,
         password=hashed_password,  # Store the hashed password
         phone_number=user_params.phone_number,
-      
     )
     database.add(new_user)
     database.commit()
@@ -149,7 +153,35 @@ def update_user_by_id(user_id: int, user_params: UserInUpdate, database: Session
     database.commit()
     updated_user = database.query(User).filter(User.id == user_id).first()
     return updated_user
+@app.post("/teachers/", response_model=dict)
+def add_teacher(teacher_params: TeacherCreate, db: Session = Depends(get_db)):
+    """
+    Create a new teacher in the database.
+    """
+    # Check if the user already has a teacher profile
+    existing_teacher = db.query(Teacher).filter(Teacher.user_id == teacher_params.user_id).first()
+    if existing_teacher:
+        raise HTTPException(status_code=400, detail="Teacher profile already exists for this user")
 
+    # Create a new teacher
+    new_teacher = Teacher(
+        user_id=teacher_params.user_id,
+        subject_id=teacher_params.subject_id,
+        qualifications=teacher_params.qualifications,
+    )
+    db.add(new_teacher)
+    db.commit()
+    db.refresh(new_teacher)
+    return {"message": "Teacher created successfully", "teacher_id": new_teacher.id}
+@app.get("/teachers/", response_model=List[TeacherCreate])
+def get_all_teachers(db: Session = Depends(get_db)):
+    """
+    Retrieve all teachers from the database.
+    """
+    teachers = db.query(Teacher).all()
+    if not teachers:
+        raise HTTPException(status_code=404, detail="No teachers found")
+    return teachers
 @app.post("/memberships/", response_model=MembershipOut)
 def create_membership(membership: MembershipCreate, database: Session = Depends(get_db)):
     """
@@ -376,6 +408,12 @@ def read_betyg(database: Session = Depends(get_db)):
     if not betyg:
         raise HTTPException(status_code=404, detail="No betyg found")
     return betyg
+@app.get("/betyg/user/{user_id}")
+def get_betyg_by_user(user_id: int, db: Session = Depends(get_db)):
+    betyg = db.query(Betyg).filter(Betyg.user_id == user_id).all()
+    if not betyg:
+        raise HTTPException(status_code=404, detail="No grades found for this user")
+    return betyg
 @app.post("/betyg/", response_model=BetygOut)
 def create_betyg_view(betyg: BetygCreate, database: Session = Depends(get_db)):
     """
@@ -386,6 +424,9 @@ def create_betyg_view(betyg: BetygCreate, database: Session = Depends(get_db)):
         comments=betyg.comments,
         feedback=betyg.feedback,
         homework_id=betyg.homework_id,
+        user_id=betyg.user_id,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     database.add(new_betyg)
     database.commit()

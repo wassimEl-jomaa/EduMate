@@ -115,6 +115,7 @@ class BetygCreate(BaseModel):
     comments: Optional[str]
     feedback: Optional[str]
     homework_id: int
+    user_id: int
 
 class BetygUpdate(BaseModel):
     grade: Optional[str]
@@ -187,6 +188,10 @@ class RecommendedResourceOut(BaseModel):
     class Config:
         orm_mode: True
         from_attributes = True
+class TeacherCreate(BaseModel):
+    user_id: int
+    subject_id: Optional[int] = None
+    qualifications: Optional[str] = None        
 
 class HomeworkBase(BaseModel):
     title: str
@@ -198,6 +203,7 @@ class HomeworkBase(BaseModel):
 class HomeworkCreate(HomeworkBase):
     user_id: int  # Added user_id field
     subject_id: int  # Added subject_id field
+    teacher_id: Optional[int] = None
 
 class HomeworkOut(HomeworkBase):
     id: int

@@ -122,31 +122,7 @@ const MinSida = ({ userId }) => {
                   <p>
                     <strong>Ämne:</strong> {homework.subject?.name}
                   </p>
-                  <p>
-                    <strong>Meddelande:</strong> {homework.meddelande?.message}
-                  </p>
 
-                  <p>
-                    <strong>Betyg:</strong>{" "}
-                    {homework.betyg?.grade || "Ej betygsatt"}
-                  </p>
-                  <p>
-                    <strong>Meddelande:</strong>{" "}
-                    {homework.recommended_resources?.title || "Ej betygsatt"}
-                  </p>
-                  <h2 className="text-2xl font-bold mb-4">
-                    Rekommenderade Resurser
-                  </h2>
-                  <div className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center">
-                    <p>
-                      <strong>Title:</strong>{" "}
-                      {homework.recommended_resources?.title || "Ej betygsatt"}
-                    </p>
-                    <p>
-                      <strong>Url:</strong>{" "}
-                      {homework.recommended_resources?.url || "Ej betygsatt"}
-                    </p>
-                  </div>
                   {homework.status !== "Klar" && (
                     <button
                       onClick={() => handleCompleteHomework(homework.id)}

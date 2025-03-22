@@ -20,7 +20,7 @@ import ManageArskurs from "./pages/ManageArskurs";
 import ManageMeddelanden from "./pages/ManageMeddelanden";
 import ManageHomework from "./pages/ManageHomework";
 import MeddelandePage from "./pages/MeddelandePage";
-import ManageBetyg from "./pages/ManageBetyg";
+import BetygPage from "./pages/BetygPage";
 import ManageSubjects from "./pages/ManageSubjects";
 
 const App = () => {
@@ -62,7 +62,6 @@ const App = () => {
         <Route path="/manage-users" element={<ManageUsers />} />
         <Route path="/manage-memberships" element={<ManageMemberships />} />
         <Route path="/manage-arskurs" element={<ManageArskurs />} />
-        <Route path="/betyg" element={<ManageBetyg />} />
         <Route path="/manage-subjects" element={<ManageSubjects />} />
         <Route path="/manage-meddelanden" element={<ManageMeddelanden />} />
         <Route path="/manage-homework" element={<ManageHomework />} />
@@ -70,7 +69,9 @@ const App = () => {
           path="/meddelande"
           element={<MeddelandePage userId={userId} />}
         />
+        <Route path="/betyg" element={<BetygPage userId={userId} />} />
       </Routes>
+
       <Footer />
     </div>
   );

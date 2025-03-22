@@ -156,6 +156,24 @@ const ManageMeddelanden = () => {
         </div>
         <div className="mb-4">
           <label
+            htmlFor="read_status"
+            className="block text-gray-700 font-semibold"
+          >
+            Read Status
+          </label>
+          <select
+            id="read_status"
+            name="read_status"
+            value={meddelandeData.read_status}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="Unread">Unread</option>
+            <option value="Read">Read</option>
+          </select>
+        </div>
+        <div className="mb-4">
+          <label
             htmlFor="homework_id"
             className="block text-gray-700 font-semibold"
           >
