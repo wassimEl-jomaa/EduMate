@@ -25,9 +25,12 @@ class User(Base):
     betyg = relationship("Betyg", back_populates="user")
 class Token(Base):
     __tablename__ = "token"
-    user_id = Column(Integer, ForeignKey("user.id"), unique=True, nullable=False, primary_key=True, index=True)
-    token = Column(String, unique=True, index=True, nullable=False)
-    expires_at = Column(DateTime, nullable=False)  # Token expiration time
+
+    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True, index=True)
+    token = Column(String, unique=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+
+    # Add the relationship to the User model
     user = relationship("User", back_populates="tokens")
 
 class Teacher(Base):

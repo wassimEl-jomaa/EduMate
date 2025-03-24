@@ -1,13 +1,16 @@
 from datetime import datetime, timezone
 from typing import List
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Security
+
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 from db_setup import get_db, create_databases
 from models import Teacher, User, Token
-from auth import create_database_token, generate_token, get_password_hash, token_expiry
+from auth import create_database_token, generate_token, get_current_user, get_password_hash, token_expiry
 from passlib.context import CryptContext
 from db_setup import get_db
 import crud
@@ -20,6 +23,19 @@ from schemas import UserOut, RoleOut
 
 # Initialize the FastAPI app
 app = FastAPI()
+security = HTTPBearer()
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    db: Session = Depends(get_db)
+):
+    """
+    Get the current user from the token.
+    """
+    token = credentials.credentials  # Extract the token from the Authorization header
+    db_token = db.query(Token).filter(Token.token == token).first()
+    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return db_token.user
 app.add_middleware(
         CORSMiddleware,  # type: ignore
         allow_origins=["*"],
@@ -42,18 +58,19 @@ def login(email: str, password: str, db: Session = Depends(get_db)):
     if not user or not verify_password(password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Generate a new token
-    token = generate_token(user)
-    expires_at = token_expiry(hours=1)
+    # Create or retrieve a token for the user
+    token_data = create_database_token(user, db)
 
-    # Save the token in the database
-    db_token = Token(token=token, user_id=user.id, expires_at=expires_at)
-    db.add(db_token)
-    db.commit()
-
-    return {"token": token, "expires_at": expires_at}
+    return token_data
 @app.post("/logout")
-def logout(token: str, db: Session = Depends(get_db)):
+def logout(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    db: Session = Depends(get_db)
+):
+    """
+    Logout the user by deleting the token from the database.
+    """
+    token = credentials.credentials  # Extract the token from the Authorization header
     db_token = db.query(Token).filter(Token.token == token).first()
     if not db_token:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -61,20 +78,19 @@ def logout(token: str, db: Session = Depends(get_db)):
     db.delete(db_token)
     db.commit()
     return {"message": "Logged out successfully"}
-# Dependency to get the current user based on the token
-def get_current_user(token: str, db: Session = Depends(get_db)):
-    db_token = db.query(Token).filter(Token.token == token).first()
-    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return db_token.user
+
 
 # Protected route example
 @app.get("/protected")
 def protected_route(current_user: User = Depends(get_current_user)):
+    """
+    A protected route that requires authentication.
+    """
     return {"message": f"Hello, {current_user.username}!"}
 
 @app.get("/users/", response_model=List[UserOut])
-def read_users(database: Session = Depends(get_db)):
+def read_users(current_user: User = Depends(get_current_user),
+    database: Session = Depends(get_db)):
     """
      Hämtar alla användare från databasen.
     """
@@ -84,6 +100,18 @@ def read_users(database: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No users found")
 
     return users
+@app.get("/user-profile")
+def get_user_profile(current_user: User = Depends(get_current_user)):
+    """
+    Retrieve the profile of the currently authenticated user.
+    """
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+    }
 @app.get("/users/{user_id}", response_model=UserOut)
 def get_user_by_id(user_id: int, database: Session = Depends(get_db)):
     """

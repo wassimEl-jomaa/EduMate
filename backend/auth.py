@@ -5,7 +5,9 @@ import json
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Security
+from fastapi import security
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 from db_setup import get_db
 from models import Token, User
@@ -13,7 +15,7 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_SALT = "wassim"
-
+security = HTTPBearer()
 def get_password_hash(password: str) -> str:
     """Hash a plain text password."""
     return pwd_context.hash(password)
@@ -65,17 +67,27 @@ def token_expiry(hours=1):
 # Create a token and save it in the database
 def create_database_token(user: User, db: Session, hours=1):
     """Create a token for a user and save it in the database."""
-    db_token = db_token = db.query(Token).filter(user.id == Token.user_id).first()
-    if not db_token or db_token.expires_at < datetime.now():
-        if db_token:
+    # Check if a token already exists for the user
+    db_token = db.query(Token).filter(Token.user_id == user.id).first()
+
+    if db_token:
+        # If the token exists and is expired, delete it
+        if db_token.expires_at < datetime.now(timezone.utc):
             db.delete(db_token)
-            db.commit() # Delete the existing token if it has expired
-        token = generate_token(user)
-        expires_at = token_expiry(hours)
-        db_token = Token(token=token, user_id=user.id, expires_at=expires_at)
-        
-        db.add(db_token)
-        db.commit()
+            db.commit()
+        else:
+            # If the token exists and is still valid, return it
+            return {"token": db_token.token, "expires_at": db_token.expires_at}
+
+    # Generate a new token
+    token = generate_token(user)
+    expires_at = token_expiry(hours)
+
+    # Create a new token entry
+    db_token = Token(token=token, user_id=user.id, expires_at=expires_at)
+    db.add(db_token)
+    db.commit()
+
     return {"token": db_token.token, "expires_at": db_token.expires_at}
 
 # Validate a token from the database
@@ -87,6 +99,20 @@ def validate_database_token(token: str, db: Session):
     return db_token.user
 
 # Dependency to get the current user based on the token
-def get_current_user(token: str, db: Session = Depends(get_db)):
-    """Get the current user from the token."""
-    return validate_database_token(token, db)
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    db: Session = Depends(get_db)
+):
+    """
+    Get the current user from the token.
+    """
+    token = credentials.credentials
+    print(f"Received token: {token}")  # Debug log
+    db_token = db.query(Token).filter(Token.token == token).first()
+    if not db_token:
+        print("Token not found in database")  # Debug log
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if db_token.expires_at < datetime.now(timezone.utc):
+        print("Token is expired")  # Debug log
+        raise HTTPException(status_code=401, detail="Expired token")
+    return db_token.user
