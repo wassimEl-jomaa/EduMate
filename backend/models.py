@@ -13,9 +13,9 @@ class User(Base):
     email = Column(String)
     password = Column(String)
     phone_number = Column(String)
-    arskurs_id = Column(Integer, ForeignKey('arskurs.id'), default=0)
-    role_id = Column(Integer, ForeignKey('role.id'), default=0)
-    membership_id = Column(Integer, ForeignKey('membership.id'))
+    arskurs_id = Column(Integer, ForeignKey('arskurs.id'), nullable=True)
+    role_id = Column(Integer, ForeignKey('role.id'), nullable=True)
+    membership_id = Column(Integer, ForeignKey('membership.id'), nullable=True)
 
     membership = relationship("Membership")
     role = relationship("Role")
@@ -25,9 +25,8 @@ class User(Base):
     betyg = relationship("Betyg", back_populates="user")
 class Token(Base):
     __tablename__ = "token"
-    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("user.id"), unique=True, nullable=False, primary_key=True, index=True)
     token = Column(String, unique=True, index=True, nullable=False)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     expires_at = Column(DateTime, nullable=False)  # Token expiration time
     user = relationship("User", back_populates="tokens")
 

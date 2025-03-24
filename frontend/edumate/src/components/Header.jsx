@@ -1,18 +1,19 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
-export default function Header({ signedIn, setSignedIn }) {
+export default function Header({ signedIn, setSignedIn, role }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const logout = () => {
     setSignedIn(false); // Log the user out
+    localStorage.removeItem("token"); // Remove the token from localStorage
   };
 
   // Toggle mobile menu visibility
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-
+  console.log("role", role);
   return (
     <header className="bg-blue-100 py-4 mb-4 shadow-lg">
       <nav className="mx-auto flex justify-between items-center px-6 md:px-12">
@@ -44,12 +45,6 @@ export default function Header({ signedIn, setSignedIn }) {
           {!signedIn ? (
             <div className="flex space-x-6">
               <Link
-                to="/admin"
-                className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
-              >
-                Admin
-              </Link>
-              <Link
                 to="/login"
                 className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
@@ -64,6 +59,14 @@ export default function Header({ signedIn, setSignedIn }) {
             </div>
           ) : (
             <div className="flex space-x-6">
+              {role == "Admin" && (
+                <Link
+                  to="/admin"
+                  className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+                >
+                  Admin
+                </Link>
+              )}
               <Link
                 to="/Profil"
                 className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"

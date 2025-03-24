@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import decodeToken from "../utils/utils";
 
-export default function LoginForm({ signedIn, setSignedIn, setUserId }) {
+export default function LoginForm({
+  signedIn,
+  role,
+  setSignedIn,
+  setRole,
+  setUserId,
+}) {
   const [email, setEmail] = useState(""); // State for email
   const [password, setPassword] = useState(""); // State for password
   const [errorMessage, setErrorMessage] = useState(""); // State for error message
@@ -25,19 +32,13 @@ export default function LoginForm({ signedIn, setSignedIn, setUserId }) {
           }
         );
 
-        const { token, user_id, role } = response.data; // Extract token, user ID, and role from the response
+        const { token } = response.data; // Extract token, user ID, and role from the response
         localStorage.setItem("token", token); // Store the token in localStorage
-        setUserId(user_id); // Set userId
-        setSignedIn(true);
-        console.log("Response Data:", response.data);
-        console.log("Role ID:", role.id);
-
-        // Redirect based on role
-        if (role.name === "Admin") {
-          navigate("/admin"); // Redirect to admin page if the user is an admin
-        } else {
-          navigate("/minsida"); // Redirect to the user's personal page otherwise
-        }
+        const message = decodeToken(token).split("|"); // Decode the token
+        setSignedIn(true); // Log the user in
+        setRole(message[1]); // Set the user's role
+        setUserId(message[0]); // Set the user's ID
+        navigate("/minsida"); // Redirect to the user's personal page otherwise
       } catch (error) {
         console.error("Error logging in:", error);
         setErrorMessage("Fel användarnamn eller lösenord");
@@ -47,9 +48,13 @@ export default function LoginForm({ signedIn, setSignedIn, setUserId }) {
 
   useEffect(() => {
     if (signedIn) {
-      navigate("/minsida");
+      if (role === "Admin") {
+        navigate("/admin"); // Redirect to admin page if the user is an admin
+      } else {
+        navigate("/minsida"); // Redirect to the user's personal page otherwise
+      }
     }
-  }, [signedIn, navigate]);
+  }, [signedIn]);
 
   return (
     <div className="bg-gray-100">

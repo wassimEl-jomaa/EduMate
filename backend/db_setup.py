@@ -6,9 +6,9 @@ import uvicorn
 import app
 
 # Database setup
-DATABASE_URL = "sqlite:///./test.db"  # Update with your actual database URL
+DATABASE_URL = f"postgresql+psycopg2://postgres:Eva%eva1407@localhost:5432/edumate"  # Update with your actual database URL
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})  # For SQLite
+engine = create_engine(DATABASE_URL)  # For SQLite
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

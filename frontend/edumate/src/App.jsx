@@ -22,14 +22,21 @@ import ManageHomework from "./pages/ManageHomework";
 import MeddelandePage from "./pages/MeddelandePage";
 import BetygPage from "./pages/BetygPage";
 import ManageSubjects from "./pages/ManageSubjects";
+import decodeToken from "./utils/utils";
 
 const App = () => {
-  const [signedIn, setSignedIn] = useState(false);
-  const [userId, setUserId] = useState(null);
+  var message = null;
+  const user_token = localStorage.getItem("token"); // Store the token in localStorage
+  if (user_token) {
+    message = decodeToken(user_token).split("|"); // Decode the token
+  }
+  const [signedIn, setSignedIn] = useState(user_token ? true : false);
+  const [userId, setUserId] = useState(message && message[0] ? message[0] : "");
+  const [role, setRole] = useState(message && message[1] ? message[1] : "");
 
   return (
     <div className="bg-gray-100">
-      <Header signedIn={signedIn} setSignedIn={setSignedIn} />
+      <Header signedIn={signedIn} setSignedIn={setSignedIn} role={role} />
       <Routes>
         <Route
           path="/"
@@ -46,7 +53,9 @@ const App = () => {
           element={
             <LoginForm
               signedIn={signedIn}
+              role={role}
               setSignedIn={setSignedIn}
+              setRole={setRole}
               setUserId={setUserId}
             />
           }

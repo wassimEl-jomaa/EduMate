@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 from db_setup import get_db, create_databases
 from models import Teacher, User, Token
-from auth import generate_token, get_password_hash, token_expiry
+from auth import create_database_token, generate_token, get_password_hash, token_expiry
 from passlib.context import CryptContext
 from db_setup import get_db
 import crud
@@ -43,7 +43,7 @@ def login(email: str, password: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Generate a new token
-    token = generate_token()
+    token = generate_token(user)
     expires_at = token_expiry(hours=1)
 
     # Save the token in the database
@@ -104,6 +104,11 @@ def add_users(user_params: UserIn, database: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    # Query the Role model
+    role_instance = database.query(Role).filter(Role.id == 1).first()
+    if not role_instance:
+        raise HTTPException(status_code=404, detail="Role not found")
+
     # Hash the password before saving
     hashed_password = get_password_hash(user_params.password)
     new_user = User(
@@ -113,6 +118,7 @@ def add_users(user_params: UserIn, database: Session = Depends(get_db)):
         email=user_params.email,
         password=hashed_password,  # Store the hashed password
         phone_number=user_params.phone_number,
+        role=role_instance  # Default role for new users
     )
     database.add(new_user)
     database.commit()
@@ -125,16 +131,7 @@ def get_user_by_email_and_password(user: GetUser, db: Session = Depends(get_db))
     if not db_user or not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    # Generate a token
-    token = generate_token()
-    expires_at = token_expiry(hours=1)
-
-    # Save the token in the database
-    db_token = Token(token=token, user_id=db_user.id, expires_at=expires_at)
-    db.add(db_token)
-    db.commit()
-
-    return {"token": token, "user_id": db_user.id, "role": db_user.role}
+    return create_database_token(db_user, db)
 @app.delete("/users/{user_id}")
 def delete_user_view(user_id: int, database: Session = Depends(get_db)):
     """
