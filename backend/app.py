@@ -177,34 +177,62 @@ def get_user_by_email_and_password(
 
     return create_database_token(db_user, db)
 @app.delete("/users/{user_id}")
-def delete_user_view(user_id: int, database: Session = Depends(get_db)):
+def delete_user_view(
+    user_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete a user from the database.
     """
-    return crud.delete_user(database, user_id)
-@app.patch("/users/{user_id}", response_model=UserOut)
-def update_user_by_id(user_id: int, user_params: UserInUpdate, database: Session = Depends(get_db)):
-    """
-    Update a user by ID in the database.
-    """
+    # Check if the user exists
     user = database.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    database.execute(update(User).where(User.id == user_id).values(user_params.model_dump(exclude_none=True)))
+
+    # Perform the deletion
+    database.delete(user)
     database.commit()
+    return {"message": f"User with ID {user_id} has been deleted successfully"}
+@app.patch("/users/{user_id}", response_model=UserOut)
+def update_user_by_id(
+    user_id: int,
+    user_params: UserInUpdate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
+    """
+    Update a user by ID in the database.
+    """
+    # Check if the user exists
+    user = database.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update the user with the provided fields
+    database.execute(
+        update(User)
+        .where(User.id == user_id)
+        .values(user_params.model_dump(exclude_none=True))  # Exclude None values
+    )
+    database.commit()
+
+    # Retrieve the updated user
     updated_user = database.query(User).filter(User.id == user_id).first()
     return updated_user
 @app.post("/teachers/", response_model=dict)
-def add_teacher(teacher_params: TeacherCreate, db: Session = Depends(get_db)):
+def add_teacher(
+    teacher_params: TeacherCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
     """
     Create a new teacher in the database.
     """
-    # Check if the user already has a teacher profile
     existing_teacher = db.query(Teacher).filter(Teacher.user_id == teacher_params.user_id).first()
     if existing_teacher:
         raise HTTPException(status_code=400, detail="Teacher profile already exists for this user")
 
-    # Create a new teacher
     new_teacher = Teacher(
         user_id=teacher_params.user_id,
         subject_id=teacher_params.subject_id,
@@ -214,8 +242,13 @@ def add_teacher(teacher_params: TeacherCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_teacher)
     return {"message": "Teacher created successfully", "teacher_id": new_teacher.id}
+
+
 @app.get("/teachers/", response_model=List[TeacherCreate])
-def get_all_teachers(db: Session = Depends(get_db)):
+def get_all_teachers(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
     """
     Retrieve all teachers from the database.
     """
@@ -223,8 +256,13 @@ def get_all_teachers(db: Session = Depends(get_db)):
     if not teachers:
         raise HTTPException(status_code=404, detail="No teachers found")
     return teachers
+
 @app.post("/memberships/", response_model=MembershipOut)
-def create_membership(membership: MembershipCreate, database: Session = Depends(get_db)):
+def create_membership(
+    membership: MembershipCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Create a new membership in the database.
     """
@@ -238,8 +276,12 @@ def create_membership(membership: MembershipCreate, database: Session = Depends(
     database.refresh(new_membership)
     return new_membership
 
+
 @app.get("/memberships/", response_model=List[MembershipOut])
-def read_memberships(database: Session = Depends(get_db)):
+def read_memberships(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve all memberships from the database.
     """
@@ -247,30 +289,42 @@ def read_memberships(database: Session = Depends(get_db)):
     if not memberships:
         raise HTTPException(status_code=404, detail="No memberships found")
     return memberships
+
+
 @app.put("/memberships/{membership_id}", response_model=MembershipOut)
-def replace_membership(membership_id: int, membership: MembershipCreate, database: Session = Depends(get_db)):
+def replace_membership(
+    membership_id: int,
+    membership: MembershipCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Replace an existing membership.
     """
     db_membership = database.query(Membership).filter(Membership.id == membership_id).first()
     if not db_membership:
         raise HTTPException(status_code=404, detail="Membership not found")
-    
-    # Replace all fields
+
     db_membership.membership_type = membership.membership_type
     db_membership.start_date = membership.start_date
     db_membership.end_date = membership.end_date
-    
+
     database.commit()
     database.refresh(db_membership)
     return db_membership
 
+
 @app.delete("/memberships/{membership_id}")
-def delete_membership_view(membership_id: int, database: Session = Depends(get_db)):
+def delete_membership_view(
+    membership_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete a membership from the database.
     """
     return crud.delete_membership(database, membership_id)
+
 # Endpoint to create a new role
 @app.post("/roles/", response_model=RoleOut)
 def create_role(role_name: str, database: Session = Depends(get_db)):
@@ -281,33 +335,64 @@ def create_role(role_name: str, database: Session = Depends(get_db)):
     return role
 
 # Endpoint to assign a role to a user
+@app.post("/roles/", response_model=RoleOut)
+def create_role(
+    role_name: str,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
+    """
+    Create a new role in the database.
+    """
+    role = crud.add_role(database, role_name)
+    return role
+
+
 @app.post("/users/{user_id}/roles/{role_id}")
-def assign_role_to_user(user_id: int, role_id: int, database: Session = Depends(get_db)):
+def assign_role_to_user(
+    user_id: int,
+    role_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Assign a role to a user.
     """
     user = crud.add_role_to_user(database, user_id, role_id)
     return user
 
-# Endpoint to get all roles
+
 @app.get("/roles/", response_model=List[RoleOut])
-def get_roles(database: Session = Depends(get_db)):
+def get_roles(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve all roles from the database.
     """
     roles = crud.get_all_roles(database)
     return roles
 
-# Endpoint to get users by role
+
 @app.get("/roles/{role_name}/users", response_model=List[UserOut])
-def get_users_by_role(role_name: str, database: Session = Depends(get_db)):
+def get_users_by_role(
+    role_name: str,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve all users with a specific role.
     """
     users = crud.get_users_by_role(database, role_name)
     return users
+
 @app.patch("/roles/{role_id}", response_model=RoleOut)
-def update_role(role_id: int, role_name: str, database: Session = Depends(get_db)):
+def update_role(
+    role_id: int,
+    role_name: str,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Update an existing role's name.
     """
@@ -319,8 +404,14 @@ def update_role(role_id: int, role_name: str, database: Session = Depends(get_db
     database.commit()
     database.refresh(db_role)
     return db_role
+
+
 @app.delete("/roles/{role_id}", response_model=RoleOut)
-def delete_role(role_id: int, database: Session = Depends(get_db)):
+def delete_role(
+    role_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete a role from the database.
     """
@@ -331,74 +422,120 @@ def delete_role(role_id: int, database: Session = Depends(get_db)):
     database.delete(db_role)
     database.commit()
     return db_role
-
 # Create homework
 @app.post("/homeworks/", response_model=HomeworkOut)
-def create_homework_view(homework: HomeworkCreate, database: Session = Depends(get_db)):
+def create_homework_view(
+    homework: HomeworkCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
+    """
+    Create a new homework in the database.
+    """
     user = database.query(User).filter(User.id == homework.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Ensure correct attributes are used for Homework model
+
     new_homework = Homework(
         title=homework.title,
         description=homework.description,
         due_date=homework.due_date,
         user_id=homework.user_id,
-        subject_id=homework.subject_id  # Ensure this attribute exists in Homework model
+        subject_id=homework.subject_id
     )
-    
+
     database.add(new_homework)
     database.commit()
     database.refresh(new_homework)
     return new_homework
 
-# Get all homeworks
+
 @app.get("/homeworks/", response_model=List[HomeworkOut])
-def get_homeworks_view(database: Session = Depends(get_db)):
+def get_homeworks_view(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
+    """
+    Retrieve all homeworks from the database.
+    """
     homeworks = database.query(Homework).all()
     if not homeworks:
         raise HTTPException(status_code=404, detail="No homeworks found")
-    return homeworks  # FastAPI will automatically convert SQLAlchemy objects to Pydantic models
+    return homeworks
 
-# Get homeworks by user ID
+
 @app.get("/homeworks/{user_id}", response_model=List[HomeworkOut])
-def get_homework_by_user_view(user_id: int, database: Session = Depends(get_db)):
+def get_homework_by_user_view(
+    user_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
+    """
+    Retrieve all homeworks for a specific user.
+    """
     homeworks = crud.get_homework_by_user(database, user_id)
     if not homeworks:
         raise HTTPException(status_code=404, detail="No homeworks found for this user")
     return homeworks
+
+
 @app.patch("/homeworks/{homework_id}", response_model=HomeworkOut)
-def update_homework_by_id(homework_id: int, homework: HomeworkInUpdate, database: Session = Depends(get_db)):
+def update_homework_by_id(
+    homework_id: int,
+    homework: HomeworkInUpdate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Update a homework by ID in the database.
     """
     db_homework = database.query(Homework).filter(Homework.id == homework_id).first()
     if not db_homework:
         raise HTTPException(status_code=404, detail="Homework not found")
-    
+
     for key, value in homework.dict(exclude_unset=True).items():
         setattr(db_homework, key, value)
-    
+
     database.commit()
     database.refresh(db_homework)
     return db_homework
 
+
 @app.delete("/homeworks/{homework_id}/")
-def delete_homework(homework_id: int, database: Session = Depends(get_db)):
+def delete_homework(
+    homework_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
+    """
+    Delete a homework from the database.
+    """
     homework = database.query(Homework).filter(Homework.id == homework_id).first()
     if not homework:
         raise HTTPException(status_code=404, detail="Homework not found")
+
     database.delete(homework)
     database.commit()
     return {"message": "Homework deleted successfully"}
+
 # Create recommended resource
 @app.post("/recommended_resources/", response_model=RecommendedResourceOut)
-def create_recommended_resource_view(resource: RecommendedResourceCreate, database: Session = Depends(get_db)):
+def create_recommended_resource_view(
+    resource: RecommendedResourceCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
+    """
+    Create a new recommended resource in the database.
+    """
     return crud.create_recommended_resource(database, resource)
 
+
 @app.get("/recommended_resources/", response_model=List[RecommendedResourceOut])
-def read_all_recommended_resources(database: Session = Depends(get_db)):
+def read_all_recommended_resources(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve all recommended resources from the database.
     """
@@ -406,8 +543,14 @@ def read_all_recommended_resources(database: Session = Depends(get_db)):
     if not resources:
         raise HTTPException(status_code=404, detail="No recommended resources found")
     return resources
+
+
 @app.delete("/recommended_resources/{resource_id}", response_model=RecommendedResourceOut)
-def delete_recommended_resource(resource_id: int, database: Session = Depends(get_db)):
+def delete_recommended_resource(
+    resource_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete a recommended resource from the database.
     """
@@ -418,8 +561,15 @@ def delete_recommended_resource(resource_id: int, database: Session = Depends(ge
     database.delete(db_resource)
     database.commit()
     return db_resource
+
+
 @app.patch("/recommended_resources/{resource_id}", response_model=RecommendedResourceOut)
-def update_recommended_resource(resource_id: int, resource: RecommendedResourceCreate, database: Session = Depends(get_db)):
+def update_recommended_resource(
+    resource_id: int,
+    resource: RecommendedResourceCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Update an existing recommended resource in the database.
     """
@@ -427,7 +577,6 @@ def update_recommended_resource(resource_id: int, resource: RecommendedResourceC
     if not db_resource:
         raise HTTPException(status_code=404, detail="Recommended resource not found")
 
-    # Update fields
     if resource.title is not None:
         db_resource.title = resource.title
     if resource.url is not None:
@@ -440,6 +589,7 @@ def update_recommended_resource(resource_id: int, resource: RecommendedResourceC
     database.commit()
     database.refresh(db_resource)
     return db_resource
+
 @app.get("/betyg/", response_model=List[BetygOut])
 def read_betyg(database: Session = Depends(get_db)):
     """
