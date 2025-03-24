@@ -113,7 +113,11 @@ def get_user_profile(current_user: User = Depends(get_current_user)):
         "last_name": current_user.last_name,
     }
 @app.get("/users/{user_id}", response_model=UserOut)
-def get_user_by_id(user_id: int, database: Session = Depends(get_db)):
+def get_user_by_id(
+    user_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve a user by ID from the database.
     """
