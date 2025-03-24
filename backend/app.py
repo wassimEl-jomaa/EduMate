@@ -127,7 +127,11 @@ def get_user_by_id(
     return user
 
 @app.post("/users/", response_model=UserOut)
-def add_users(user_params: UserIn, database: Session = Depends(get_db)):
+def add_users(
+    user_params: UserIn,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Create a new user in the database.
     """
@@ -156,13 +160,21 @@ def add_users(user_params: UserIn, database: Session = Depends(get_db)):
     database.commit()
     database.refresh(new_user)
     return new_user
+    
 @app.post("/get_user_by_email_and_password")
-def get_user_by_email_and_password(user: GetUser, db: Session = Depends(get_db)):
+def get_user_by_email_and_password(
+    user: GetUser,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch a user by email and password, ensuring the request is authenticated.
+    """
     # Fetch the user by email
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    
+
     return create_database_token(db_user, db)
 @app.delete("/users/{user_id}")
 def delete_user_view(user_id: int, database: Session = Depends(get_db)):
