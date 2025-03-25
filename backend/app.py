@@ -591,7 +591,10 @@ def update_recommended_resource(
     return db_resource
 
 @app.get("/betyg/", response_model=List[BetygOut])
-def read_betyg(database: Session = Depends(get_db)):
+def read_betyg(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve all betyg from the database.
     """
@@ -599,14 +602,29 @@ def read_betyg(database: Session = Depends(get_db)):
     if not betyg:
         raise HTTPException(status_code=404, detail="No betyg found")
     return betyg
+
+
 @app.get("/betyg/user/{user_id}")
-def get_betyg_by_user(user_id: int, db: Session = Depends(get_db)):
+def get_betyg_by_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve all grades for a specific user.
+    """
     betyg = db.query(Betyg).filter(Betyg.user_id == user_id).all()
     if not betyg:
         raise HTTPException(status_code=404, detail="No grades found for this user")
     return betyg
+
+
 @app.post("/betyg/", response_model=BetygOut)
-def create_betyg_view(betyg: BetygCreate, database: Session = Depends(get_db)):
+def create_betyg_view(
+    betyg: BetygCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Create a new betyg.
     """
@@ -623,21 +641,28 @@ def create_betyg_view(betyg: BetygCreate, database: Session = Depends(get_db)):
     database.commit()
     database.refresh(new_betyg)
     return new_betyg
+
+
 @app.put("/betyg/{betyg_id}", response_model=BetygOut)
-def update_betyg_view(betyg_id: int, betyg: BetygUpdate, database: Session = Depends(get_db)):
+def update_betyg_view(
+    betyg_id: int,
+    betyg: BetygUpdate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Update an existing betyg.
     """
     updated_betyg = crud.update_betyg(database, betyg_id, betyg)
     return updated_betyg
-@app.get("/meddelanden/", response_model=List[MeddelandeOut])
-def get_all_meddelanden(database: Session = Depends(get_db)):
-    """
-    Fetch all meddelanden.
-    """
-    return database.query(Meddelande).all()
+
+
 @app.delete("/betyg/{betyg_id}", response_model=BetygOut)
-def delete_betyg(betyg_id: int, database: Session = Depends(get_db)):
+def delete_betyg(
+    betyg_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete a betyg from the database.
     """
@@ -648,8 +673,13 @@ def delete_betyg(betyg_id: int, database: Session = Depends(get_db)):
     database.delete(db_betyg)
     database.commit()
     return db_betyg
+
 @app.get("/meddelanden/user/{user_id}", response_model=List[MeddelandeOut])
-def get_meddelanden_for_user(user_id: int, db: Session = Depends(get_db)):
+def get_meddelanden_for_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
     """
     Fetch all Meddelanden for a specific user.
     """
@@ -662,14 +692,26 @@ def get_meddelanden_for_user(user_id: int, db: Session = Depends(get_db)):
     if not meddelanden:
         raise HTTPException(status_code=404, detail="No messages found for this user")
     return meddelanden
+
+
 @app.post("/meddelanden/", response_model=MeddelandeOut)
-def create_meddelande_view(meddelande: MeddelandeCreate, database: Session = Depends(get_db)):
+def create_meddelande_view(
+    meddelande: MeddelandeCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Create a new meddelande.
     """
     return crud.create_meddelande(database, meddelande)
+
+
 @app.delete("/meddelanden/{meddelande_id}", response_model=MeddelandeOut)
-def delete_meddelande(meddelande_id: int, database: Session = Depends(get_db)):
+def delete_meddelande(
+    meddelande_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete a meddelande from the database.
     """
@@ -680,12 +722,15 @@ def delete_meddelande(meddelande_id: int, database: Session = Depends(get_db)):
     database.delete(db_meddelande)
     database.commit()
     return db_meddelande
+
+
 @app.put("/meddelanden/{meddelande_id}/", response_model=MeddelandeOut)
 def update_or_mark_as_read(
     meddelande_id: int,
     meddelande: MeddelandeCreate = None,  # Optional payload for full update
     mark_as_read: bool = False,  # Query parameter to mark as read
-    database: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
 ):
     """
     Update an existing meddelande or mark it as read.
@@ -708,7 +753,10 @@ def update_or_mark_as_read(
     database.refresh(db_meddelande)
     return db_meddelande
 @app.get("/filuppladdningar/", response_model=List[FiluppladdningOut])
-def read_filuppladdningar(database: Session = Depends(get_db)):
+def read_filuppladdningar(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve all filuppladdningar from the database.
     """
@@ -716,14 +764,26 @@ def read_filuppladdningar(database: Session = Depends(get_db)):
     if not filuppladdningar:
         raise HTTPException(status_code=404, detail="No filuppladdningar found")
     return filuppladdningar
+
+
 @app.post("/filuppladdningar/", response_model=FiluppladdningOut)
-def create_filuppladdning_view(filuppladdning: FiluppladdningCreate, database: Session = Depends(get_db)):
+def create_filuppladdning_view(
+    filuppladdning: FiluppladdningCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Create a new filuppladdning.
     """
     return crud.create_filuppladdning(database, filuppladdning)
+
+
 @app.delete("/filuppladdningar/{filuppladdning_id}", response_model=FiluppladdningOut)
-def delete_filuppladdning(filuppladdning_id: int, database: Session = Depends(get_db)):
+def delete_filuppladdning(
+    filuppladdning_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete a filuppladdning from the database.
     """
@@ -734,8 +794,15 @@ def delete_filuppladdning(filuppladdning_id: int, database: Session = Depends(ge
     database.delete(db_filuppladdning)
     database.commit()
     return db_filuppladdning
+
+
 @app.patch("/filuppladdningar/{filuppladdning_id}", response_model=FiluppladdningOut)
-def update_filuppladdning(filuppladdning_id: int, filuppladdning: FiluppladdningCreate, database: Session = Depends(get_db)):
+def update_filuppladdning(
+    filuppladdning_id: int,
+    filuppladdning: FiluppladdningCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Update an existing filuppladdning in the database.
     """
@@ -751,8 +818,17 @@ def update_filuppladdning(filuppladdning_id: int, filuppladdning: Filuppladdning
     database.commit()
     database.refresh(db_filuppladdning)
     return db_filuppladdning
+
+
 @app.post("/arskurs/", response_model=ArskursSchema)
-def create_arskurs(arskurs: ArskursCreate, db: Session = Depends(get_db)):
+def create_arskurs(
+    arskurs: ArskursCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new Årskurs in the database.
+    """
     get_class = db.query(Arskurs).filter(Arskurs.name == arskurs.name).first()
     if get_class:
         raise HTTPException(status_code=400, detail="Class already exists")
@@ -761,8 +837,13 @@ def create_arskurs(arskurs: ArskursCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_arskurs)
     return db_arskurs
+
+
 @app.get("/arskurs/", response_model=List[ArskursSchema])
-def get_all_arskurs(database: Session = Depends(get_db)):
+def get_all_arskurs(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve all Årskurs from the database.
     """
@@ -770,8 +851,15 @@ def get_all_arskurs(database: Session = Depends(get_db)):
     if not arskurs_list:
         raise HTTPException(status_code=404, detail="No Årskurs found")
     return arskurs_list
+
+
 @app.patch("/arskurs/{arskurs_id}", response_model=ArskursSchema)
-def update_arskurs(arskurs_id: int, arskurs: ArskursCreate, database: Session = Depends(get_db)):
+def update_arskurs(
+    arskurs_id: int,
+    arskurs: ArskursCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Update an existing Årskurs in the database.
     """
@@ -788,8 +876,14 @@ def update_arskurs(arskurs_id: int, arskurs: ArskursCreate, database: Session = 
     database.commit()
     database.refresh(db_arskurs)
     return db_arskurs
+
+
 @app.delete("/arskurs/{arskurs_id}", response_model=ArskursSchema)
-def delete_arskurs(arskurs_id: int, database: Session = Depends(get_db)):
+def delete_arskurs(
+    arskurs_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete an Årskurs from the database.
     """
@@ -800,8 +894,14 @@ def delete_arskurs(arskurs_id: int, database: Session = Depends(get_db)):
     database.delete(db_arskurs)
     database.commit()
     return db_arskurs
+
+
 @app.get("/subjects/{subject_id}", response_model=SubjectOut)
-def get_subject_by_id(subject_id: int, database: Session = Depends(get_db)):
+def get_subject_by_id(
+    subject_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve a subject by ID from the database.
     """
@@ -809,8 +909,13 @@ def get_subject_by_id(subject_id: int, database: Session = Depends(get_db)):
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
     return subject
+
+
 @app.get("/subjects/", response_model=List[SubjectOut])
-def get_all_subjects(database: Session = Depends(get_db)):
+def get_all_subjects(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Retrieve all subjects from the database.
     """
@@ -818,22 +923,34 @@ def get_all_subjects(database: Session = Depends(get_db)):
     if not subjects:
         raise HTTPException(status_code=404, detail="No subjects found")
     return subjects
+
+
 @app.post("/subjects/", response_model=SubjectOut)
-def create_subject(subject: SubjectCreate, database: Session = Depends(get_db)):
+def create_subject(
+    subject: SubjectCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Create a new subject in the database.
     """
     existing_subject = database.query(Subject).filter(Subject.name == subject.name).first()
     if existing_subject:
         raise HTTPException(status_code=400, detail="Subject already exists")
-    
+
     new_subject = Subject(name=subject.name)
     database.add(new_subject)
     database.commit()
     database.refresh(new_subject)
     return new_subject
+
+
 @app.delete("/subjects/{subject_id}", response_model=SubjectOut)
-def delete_subject(subject_id: int, database: Session = Depends(get_db)):
+def delete_subject(
+    subject_id: int,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Delete a subject from the database.
     """
@@ -844,8 +961,15 @@ def delete_subject(subject_id: int, database: Session = Depends(get_db)):
     database.delete(db_subject)
     database.commit()
     return db_subject
+
+
 @app.patch("/subjects/{subject_id}", response_model=SubjectOut)
-def update_subject(subject_id: int, subject: SubjectCreate, database: Session = Depends(get_db)):
+def update_subject(
+    subject_id: int,
+    subject: SubjectCreate,
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    database: Session = Depends(get_db)
+):
     """
     Update an existing subject in the database.
     """
