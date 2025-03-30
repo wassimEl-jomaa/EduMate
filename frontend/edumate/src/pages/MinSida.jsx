@@ -8,16 +8,26 @@ const MinSida = ({ userId }) => {
 
   // Fetch user data
   useEffect(() => {
+    const token = localStorage.getItem("token");
     console.log("Fetching user data for userId:", userId);
+
     const fetchUserData = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8000/users/${userId}`
+          `http://localhost:8000/users/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         console.log("Fetched user data:", response.data);
         setUser(response.data);
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error(
+          "Error fetching user data:",
+          error.response?.data || error.message
+        );
       }
     };
 
@@ -28,18 +38,29 @@ const MinSida = ({ userId }) => {
 
   // Fetch homework data
   useEffect(() => {
+    const token = localStorage.getItem("token");
     console.log("Fetching homework list for userId:", userId);
+
     const fetchHomeworkData = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8000/homeworks/${userId}` // Corrected API URL
+          `http://localhost:8000/homeworks/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         console.log("Fetched homework data:", response.data);
         setHomeworkList(response.data);
       } catch (error) {
-        console.error("Error fetching homework data:", error);
+        console.error(
+          "Error fetching homework data:",
+          error.response?.data || error.message
+        );
       }
     };
+
     if (userId) {
       fetchHomeworkData();
     }

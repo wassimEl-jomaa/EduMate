@@ -20,7 +20,7 @@ const Teachers = () => {
 
   const handleAddMeddelanden = () => {
     // Navigate to the ManageBetyg page
-    navigate("/meddelande");
+    navigate("/manage-meddelanden");
   };
 
   return (

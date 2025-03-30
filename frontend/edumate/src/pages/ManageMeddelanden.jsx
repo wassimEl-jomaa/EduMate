@@ -30,6 +30,7 @@ const ManageMeddelanden = () => {
   // Add or update a message
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem("token");
 
     if (!meddelandeData.message || !meddelandeData.homework_id) {
       setErrorMessage("Message and Homework ID are required.");
@@ -37,31 +38,18 @@ const ManageMeddelanden = () => {
     }
 
     try {
-      if (editingMeddelandeId) {
-        // Update message
-        const response = await axios.put(
-          `http://localhost:8000/meddelanden/${editingMeddelandeId}/`,
-          meddelandeData
-        );
-        setMeddelanden((prevMeddelanden) =>
-          prevMeddelanden.map((meddelande) =>
-            meddelande.id === editingMeddelandeId ? response.data : meddelande
-          )
-        );
-        setSuccessMessage("Message updated successfully!");
-      } else {
-        // Add new message
-        const response = await axios.post(
-          "http://localhost:8000/meddelanden/",
-          meddelandeData
-        );
-        setMeddelanden((prevMeddelanden) => [
-          ...prevMeddelanden,
-          response.data,
-        ]);
-        setSuccessMessage("Message added successfully!");
-      }
-
+      const response = await axios.post(
+        "http://localhost:8000/meddelanden/",
+        meddelandeData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setMeddelanden((prevMeddelanden) => [...prevMeddelanden, response.data]);
+      setSuccessMessage("Message added successfully!");
       setErrorMessage("");
       setMeddelandeData({
         message: "",
@@ -69,7 +57,6 @@ const ManageMeddelanden = () => {
         read_status: "Unread",
         homework_id: "",
       });
-      setEditingMeddelandeId(null);
     } catch (error) {
       console.error(
         "Error managing meddelande:",

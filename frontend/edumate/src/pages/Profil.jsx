@@ -6,16 +6,26 @@ const Profil = ({ userId }) => {
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
     console.log("Fetching user data for userId:", userId);
+
     const fetchUserData = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8000/users/${userId}`
+          `http://localhost:8000/users/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         console.log("Fetched user data:", response.data);
         setUser(response.data);
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error(
+          "Error fetching user data:",
+          error.response?.data || error.message
+        );
       }
     };
 
