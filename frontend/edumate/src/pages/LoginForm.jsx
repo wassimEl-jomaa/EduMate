@@ -50,12 +50,13 @@ export default function LoginForm({
     if (signedIn) {
       if (role === "Admin") {
         navigate("/admin"); // Redirect to admin page if the user is an admin
+      } else if (role.toLowerCase() === "teacher") {
+        navigate("/teacher"); // Redirect to teacher page if the user is a teacher
       } else {
         navigate("/minsida"); // Redirect to the user's personal page otherwise
       }
     }
-  }, [signedIn]);
-
+  }, [signedIn, role, navigate]);
   return (
     <div className="bg-gray-100">
       {/* Main Section */}

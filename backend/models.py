@@ -20,13 +20,13 @@ class User(Base):
     membership = relationship("Membership")
     role = relationship("Role")
     arskurs = relationship("Arskurs")
-    tokens = relationship("Token", back_populates="user")
+    tokens = relationship("Token", back_populates="user", cascade="all, delete-orphan")
     teacher = relationship("Teacher", back_populates="user", uselist=False)  # One-to-one relationship with Teacher
     betyg = relationship("Betyg", back_populates="user")
 class Token(Base):
     __tablename__ = "token"
 
-    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), primary_key=True, index=True)
     token = Column(String, unique=True, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
 

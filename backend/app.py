@@ -54,12 +54,14 @@ def verify_password(plain_password, hashed_password):
 
 @app.post("/login")
 def login(email: str, password: str, db: Session = Depends(get_db)):
+    print(f"Login attempt for email: {email}")  # Debug log
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.password):
+        print("Invalid credentials")  # Debug log
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Create or retrieve a token for the user
     token_data = create_database_token(user, db)
+    print(f"Token created: {token_data}")  # Debug log
 
     return token_data
 @app.post("/logout")
@@ -164,13 +166,11 @@ def add_users(
 @app.post("/get_user_by_email_and_password")
 def get_user_by_email_and_password(
     user: GetUser,
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
     db: Session = Depends(get_db)
 ):
     """
-    Fetch a user by email and password, ensuring the request is authenticated.
+    Authenticate the user and return a token.
     """
-    # Fetch the user by email
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -189,6 +189,15 @@ def delete_user_view(
     user = database.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Delete related tokens
+    database.query(Token).filter(Token.user_id == user_id).delete()
+
+    # Delete related teacher profile (if applicable)
+    database.query(Teacher).filter(Teacher.user_id == user_id).delete()
+
+    # Delete related betyg (if applicable)
+    database.query(Betyg).filter(Betyg.user_id == user_id).delete()
 
     # Perform the deletion
     database.delete(user)
@@ -325,14 +334,7 @@ def delete_membership_view(
     """
     return crud.delete_membership(database, membership_id)
 
-# Endpoint to create a new role
-@app.post("/roles/", response_model=RoleOut)
-def create_role(role_name: str, database: Session = Depends(get_db)):
-    """
-    Create a new role in the database.
-    """
-    role = crud.add_role(database, role_name)
-    return role
+
 
 # Endpoint to assign a role to a user
 @app.post("/roles/", response_model=RoleOut)

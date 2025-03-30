@@ -46,12 +46,20 @@ const RegisterForm = () => {
         mode: "cors",
         body: JSON.stringify(data),
       };
-      const result = await fetch(`http://localhost:8000/users`, options);
-      if (!result.ok) {
-        throw new Error(`Det gick inte att skapa användaren. ${result.error}`);
+      try {
+        const result = await fetch(`http://localhost:8000/users/`, options);
+        if (!result.ok) {
+          const errorData = await result.json();
+          throw new Error(
+            errorData.detail || "Det gick inte att skapa användaren."
+          );
+        }
+        alert("Användare skapades!");
+        navigate("/login");
+      } catch (error) {
+        console.error("Error creating user:", error.message);
+        setError(error.message);
       }
-      alert("Användare skapades!");
-      navigate("/login");
     }
   };
 

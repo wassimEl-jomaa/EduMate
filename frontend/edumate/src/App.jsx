@@ -23,6 +23,7 @@ import MeddelandePage from "./pages/MeddelandePage";
 import BetygPage from "./pages/BetygPage";
 import ManageSubjects from "./pages/ManageSubjects";
 import decodeToken from "./utils/utils";
+import Teachers from "./pages/Teachers";
 
 const App = () => {
   var message = null;
@@ -74,6 +75,7 @@ const App = () => {
         <Route path="/manage-subjects" element={<ManageSubjects />} />
         <Route path="/manage-meddelanden" element={<ManageMeddelanden />} />
         <Route path="/manage-homework" element={<ManageHomework />} />
+        <Route path="/teachers" element={<Teachers />} />
         <Route
           path="/meddelande"
           element={<MeddelandePage userId={userId} />}

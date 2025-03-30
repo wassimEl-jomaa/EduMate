@@ -66,30 +66,26 @@ def token_expiry(hours=1):
 
 # Create a token and save it in the database
 def create_database_token(user: User, db: Session, hours=1):
-    """Create a token for a user and save it in the database."""
-    # Check if a token already exists for the user
+    print(f"Creating token for user: {user.id}")  # Debug log
     db_token = db.query(Token).filter(Token.user_id == user.id).first()
 
     if db_token:
-        # If the token exists and is expired, delete it
         if db_token.expires_at < datetime.now(timezone.utc):
+            print("Existing token expired, deleting it")  # Debug log
             db.delete(db_token)
             db.commit()
         else:
-            # If the token exists and is still valid, return it
+            print("Returning existing valid token")  # Debug log
             return {"token": db_token.token, "expires_at": db_token.expires_at}
 
-    # Generate a new token
     token = generate_token(user)
     expires_at = token_expiry(hours)
-
-    # Create a new token entry
     db_token = Token(token=token, user_id=user.id, expires_at=expires_at)
     db.add(db_token)
     db.commit()
+    print(f"New token created: {token}")  # Debug log
 
     return {"token": db_token.token, "expires_at": db_token.expires_at}
-
 # Validate a token from the database
 def validate_database_token(token: str, db: Session):
     """Validate a token by checking the database."""
