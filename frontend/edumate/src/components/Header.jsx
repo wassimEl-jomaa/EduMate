@@ -59,12 +59,20 @@ export default function Header({ signedIn, setSignedIn, role }) {
             </div>
           ) : (
             <div className="flex space-x-6">
-              {role == "Admin" && (
+              {role === "Admin" && (
                 <Link
                   to="/admin"
                   className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
                 >
                   Admin
+                </Link>
+              )}
+              {role === "Teacher" && (
+                <Link
+                  to="/teacher"
+                  className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
+                >
+                  Teacher
                 </Link>
               )}
               <Link
