@@ -453,17 +453,18 @@ def create_homework_view(
 
 
 @app.get("/homeworks/", response_model=List[HomeworkOut])
-def get_homeworks_view(
+def get_homeworks(
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
-    database: Session = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
-    Retrieve all homeworks from the database.
+    Get all homework for the current user.
     """
-    homeworks = database.query(Homework).all()
-    if not homeworks:
-        raise HTTPException(status_code=404, detail="No homeworks found")
-    return homeworks
+    # Ensure the current user has the required role or permissions
+    if current_user.role.name not in ["Admin", "Teacher"]:
+        raise HTTPException(status_code=403, detail="Not authorized to access homework")
+
+    return db.query(Homework).all()
 
 
 @app.get("/homeworks/{user_id}", response_model=List[HomeworkOut])
@@ -606,30 +607,34 @@ def read_betyg(
     return betyg
 
 
-@app.get("/betyg/user/{user_id}")
-def get_betyg_by_user(
+@app.get("/betyg/user/{user_id}", response_model=List[BetygOut])
+def get_betyg_for_user(
     user_id: int,
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve all grades for a specific user.
+    Get all betyg for a specific user.
     """
-    betyg = db.query(Betyg).filter(Betyg.user_id == user_id).all()
-    if not betyg:
-        raise HTTPException(status_code=404, detail="No grades found for this user")
-    return betyg
+    # Ensure the current user is authorized to access this user's betyg
+    if current_user.id != user_id and current_user.role.name != "Admin":
+        raise HTTPException(status_code=403, detail="Not authorized to access this user's betyg")
 
+    return db.query(Betyg).filter(Betyg.user_id == user_id).all()
 
 @app.post("/betyg/", response_model=BetygOut)
 def create_betyg_view(
     betyg: BetygCreate,
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    current_user: User = Depends(get_current_user),
     database: Session = Depends(get_db)
 ):
     """
     Create a new betyg.
     """
+    # Ensure the user_id is set to the current user's ID if not provided
+    if not betyg.user_id:
+        betyg.user_id = current_user.id
+
     new_betyg = Betyg(
         grade=betyg.grade,
         comments=betyg.comments,
@@ -643,7 +648,6 @@ def create_betyg_view(
     database.commit()
     database.refresh(new_betyg)
     return new_betyg
-
 
 @app.put("/betyg/{betyg_id}", response_model=BetygOut)
 def update_betyg_view(
@@ -676,24 +680,21 @@ def delete_betyg(
     database.commit()
     return db_betyg
 
-@app.get("/meddelanden/user/{user_id}", response_model=List[MeddelandeOut])
+@app.get("/meddelanden/user/{user_id}")
 def get_meddelanden_for_user(
     user_id: int,
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Fetch all Meddelanden for a specific user.
+    Get meddelanden for a specific user.
     """
-    meddelanden = (
-        db.query(Meddelande)
-        .join(Homework)
-        .filter(Homework.user_id == user_id)
-        .all()
-    )
-    if not meddelanden:
-        raise HTTPException(status_code=404, detail="No messages found for this user")
-    return meddelanden
+    # Ensure the current user is authorized to access this user's meddelanden
+    if current_user.id != user_id and current_user.role.name not in ["Admin", "Teacher"]:
+        raise HTTPException(status_code=403, detail="Not authorized to access this user's meddelanden")
+
+    # Query the meddelanden for the user
+    return db.query(Meddelande).filter(Meddelande.user_id == user_id).all()
 
 
 @app.post("/meddelanden/", response_model=MeddelandeOut)
@@ -702,11 +703,23 @@ def create_meddelande_view(
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
     database: Session = Depends(get_db)
 ):
-    """
-    Create a new meddelande.
-    """
-    return crud.create_meddelande(database, meddelande)
-
+    # Ensure only Admins or Teachers can create meddelanden
+    if current_user.role.name not in ["Admin", "Teacher"]:
+        raise HTTPException(status_code=403, detail="Not authorized to create meddelanden")
+    print(f"Current user role: {current_user.role.name}")
+    new_meddelande = Meddelande(
+        message=meddelande.message,
+        description=meddelande.description,
+        read_status="Unread",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+        homework_id=meddelande.homework_id,
+        user_id=current_user.id,  # Assign the current user's ID
+    )
+    database.add(new_meddelande)
+    database.commit()
+    database.refresh(new_meddelande)
+    return new_meddelande
 
 @app.delete("/meddelanden/{meddelande_id}", response_model=MeddelandeOut)
 def delete_meddelande(

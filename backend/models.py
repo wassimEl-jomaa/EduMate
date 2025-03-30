@@ -23,6 +23,7 @@ class User(Base):
     tokens = relationship("Token", back_populates="user", cascade="all, delete-orphan")
     teacher = relationship("Teacher", back_populates="user", uselist=False)  # One-to-one relationship with Teacher
     betyg = relationship("Betyg", back_populates="user")
+    meddelanden = relationship("Meddelande", back_populates="user")  # Relationship to Meddelande
 class Token(Base):
     __tablename__ = "token"
 
@@ -138,10 +139,14 @@ class Meddelande(Base):
     message = Column(Text, nullable=False)
     description = Column(Text, nullable=True)  # New column for description
     read_status = Column(String, default="Unread")  # New column for read_status
-    created_at = Column(DateTime,  default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     homework_id = Column(Integer, ForeignKey("homework.id"))
-    homework = relationship("Homework")   
+    homework = relationship("Homework")
+
+    # Add user_id as a foreign key
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    user = relationship("User", back_populates="meddelanden")  # Relationship to the User model
 
 class RecommendedResource(Base):
     __tablename__ = "recommended_resource"

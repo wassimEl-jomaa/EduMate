@@ -7,9 +7,15 @@ const MeddelandePage = ({ userId }) => {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
     console.log("Fetching meddelanden for userId:", userId);
+
     axios
-      .get(`http://127.0.0.1:8000/meddelanden/user/${userId}`) // Updated URL
+      .get(`http://127.0.0.1:8000/meddelanden/user/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token
+        },
+      })
       .then((response) => {
         setMeddelanden(response.data);
         setLoading(false);
@@ -20,7 +26,32 @@ const MeddelandePage = ({ userId }) => {
         setLoading(false);
       });
   }, [userId]);
+  const handleCreateMeddelande = async () => {
+    const token = localStorage.getItem("token");
 
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/meddelanden/",
+        {
+          message: "New message",
+          description: "This is a test message",
+          homework_id: 1, // Replace with the actual homework ID
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("Meddelande created:", response.data);
+    } catch (err) {
+      console.error(
+        "Failed to create meddelande:",
+        err.response?.data || err.message
+      );
+    }
+  };
   const handleStatusUpdate = (meddelandeId) => {
     axios
       .put(`http://127.0.0.1:8000/meddelanden/${meddelandeId}/mark_as_read`)

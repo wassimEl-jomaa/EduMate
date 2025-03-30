@@ -1,24 +1,26 @@
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import TeacherCard from "../components/TeacherCard";
 
 const Teachers = () => {
   const [homework, setHomework] = useState([]);
   const [betyg, setBetyg] = useState([]);
   const [meddelanden, setMeddelanden] = useState([]);
+  const navigate = useNavigate(); // Initialize the navigate function
 
   const handleAddHomework = () => {
-    // Logic to add homework
-    alert("Add Homework functionality");
+    // Navigate to the ManageHomework page
+    navigate("/manage-homework");
   };
 
   const handleAddBetyg = () => {
-    // Logic to add betyg
-    alert("Add Betyg functionality");
+    // Navigate to the ManageBetyg page
+    navigate("/betyg");
   };
 
   const handleAddMeddelanden = () => {
-    // Logic to add meddelanden
-    alert("Add Meddelanden functionality");
+    // Navigate to the ManageBetyg page
+    navigate("/meddelande");
   };
 
   return (

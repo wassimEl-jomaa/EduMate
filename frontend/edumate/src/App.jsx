@@ -75,7 +75,7 @@ const App = () => {
         <Route path="/manage-subjects" element={<ManageSubjects />} />
         <Route path="/manage-meddelanden" element={<ManageMeddelanden />} />
         <Route path="/manage-homework" element={<ManageHomework />} />
-        <Route path="/teachers" element={<Teachers />} />
+        <Route path="/teacher" element={<Teachers userId={userId} />} />
         <Route
           path="/meddelande"
           element={<MeddelandePage userId={userId} />}

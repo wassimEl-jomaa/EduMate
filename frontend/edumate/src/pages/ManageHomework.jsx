@@ -19,8 +19,13 @@ const ManageHomework = () => {
   // Fetch homework from the backend
   useEffect(() => {
     const fetchHomeworks = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
       try {
-        const response = await axios.get("http://localhost:8000/homeworks/");
+        const response = await axios.get("http://localhost:8000/homeworks/", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token
+          },
+        });
         setHomeworks(response.data);
       } catch (error) {
         console.error("Error fetching homeworks:", error);
@@ -48,11 +53,17 @@ const ManageHomework = () => {
     }
 
     try {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
       if (editingHomeworkId) {
         // Update homework
         const response = await axios.put(
           `http://localhost:8000/homeworks/${editingHomeworkId}/`,
-          homeworkData
+          homeworkData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token
+            },
+          }
         );
         setHomeworks((prevHomeworks) =>
           prevHomeworks.map((homework) =>
@@ -64,7 +75,12 @@ const ManageHomework = () => {
         // Add new homework
         const response = await axios.post(
           "http://localhost:8000/homeworks/",
-          homeworkData
+          homeworkData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token
+            },
+          }
         );
         setHomeworks((prevHomeworks) => [...prevHomeworks, response.data]);
         setSuccessMessage("Homework added successfully!");
@@ -94,8 +110,13 @@ const ManageHomework = () => {
 
   // Delete homework
   const handleDelete = async (homeworkId) => {
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
     try {
-      await axios.delete(`http://localhost:8000/homeworks/${homeworkId}/`); // Ensure trailing slash
+      await axios.delete(`http://localhost:8000/homeworks/${homeworkId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token
+        },
+      });
       setHomeworks((prevHomeworks) =>
         prevHomeworks.filter((homework) => homework.id !== homeworkId)
       );
