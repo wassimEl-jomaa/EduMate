@@ -8,6 +8,13 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm.exc import NoResultFound
 from models import Membership, User
 
+def validate(data):
+    # Ensure either user_id or arskurs_id is provided, but not both
+    if not data.get('user_id') and not data.get('arskurs_id'):
+        raise HTTPException(status_code=422, detail="Either user_id or arskurs_id must be provided.")
+    if data.get('user_id') and data.get('arskurs_id'):
+        raise HTTPException(status_code=422, detail="Only one of user_id or arskurs_id can be provided.")
+    return data
 def get_all_users(database: Session):
     return database.query(User).all() 
 def add_user(database: Session, user_params: User):
@@ -62,11 +69,17 @@ def get_user_by_email_and_password(database: Session, email: str, password: str)
 # Create a new homework entry
 def create_homework(database: Session, homework_data: HomeworkCreate):
     try:
-        homework = Homework(**homework_data.model_dump())
+        # Validate the input data
+        validate(homework_data.model_dump())  # Use model_dump instead of dict
+
+        # Create the homework entry
+        homework = Homework(**homework_data.model_dump())  # Use model_dump instead of dict
         database.add(homework)
         database.commit()
         database.refresh(homework)
         return homework
+    except HTTPException as e:
+        raise e
     except Exception as e:
         database.rollback()
         raise HTTPException(status_code=500, detail=f"An error occurred while creating homework: {str(e)}")

@@ -16,11 +16,19 @@ const ManageMeddelanden = () => {
   // Fetch messages from the backend
   useEffect(() => {
     const fetchMeddelanden = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
       try {
-        const response = await axios.get("http://localhost:8000/meddelanden/");
-        setMeddelanden(response.data);
+        const response = await axios.get("http://localhost:8000/meddelanden/", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token
+          },
+        });
+        setMeddelanden(response.data); // Set the fetched messages in state
       } catch (error) {
-        console.error("Error fetching meddelanden:", error);
+        console.error(
+          "Error fetching meddelanden:",
+          error.response?.data || error.message
+        );
       }
     };
 
@@ -69,8 +77,13 @@ const ManageMeddelanden = () => {
 
   // Delete a message
   const handleDelete = async (meddelandeId) => {
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
     try {
-      await axios.delete(`http://localhost:8000/meddelanden/${meddelandeId}/`);
+      await axios.delete(`http://localhost:8000/meddelanden/${meddelandeId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token
+        },
+      });
       setMeddelanden((prevMeddelanden) =>
         prevMeddelanden.filter((meddelande) => meddelande.id !== meddelandeId)
       );

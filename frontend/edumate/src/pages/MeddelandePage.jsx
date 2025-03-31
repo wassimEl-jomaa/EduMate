@@ -26,32 +26,7 @@ const MeddelandePage = ({ userId }) => {
         setLoading(false);
       });
   }, [userId]);
-  const handleCreateMeddelande = async () => {
-    const token = localStorage.getItem("token");
 
-    try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/meddelanden/",
-        {
-          message: "New message",
-          description: "This is a test message",
-          homework_id: 1, // Replace with the actual homework ID
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("Meddelande created:", response.data);
-    } catch (err) {
-      console.error(
-        "Failed to create meddelande:",
-        err.response?.data || err.message
-      );
-    }
-  };
   const handleStatusUpdate = (meddelandeId) => {
     axios
       .put(`http://127.0.0.1:8000/meddelanden/${meddelandeId}/mark_as_read`)

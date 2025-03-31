@@ -1,6 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional, Union
 from datetime import date, datetime
+
+
 
 
 
@@ -34,7 +36,7 @@ class ArskursOut(Arskurs):
     klass: str
 
     class Config:
-        orm_mode: True
+     
         from_attributes = True  # Allows Pydantic to read data from SQLAlchemy models
 
 class Role(BaseModel):
@@ -71,7 +73,7 @@ class MembershipOut(BaseModel):
     end_date: date
 
     class Config:
-        orm_mode: True
+       
         from_attributes = True  # Allow the Pydantic model to read data from SQLAlchemy models
 class UserOut(UserBase):
     id: int
@@ -80,7 +82,7 @@ class UserOut(UserBase):
     membership: Optional[MembershipOut] = None
 
     class Config:
-        orm_mode: True
+       
         from_attributes = True
 
 class MembershipUpdate(BaseModel):
@@ -89,7 +91,7 @@ class MembershipUpdate(BaseModel):
     end_date: Optional[date] = None
 
     class Config:
-        orm_mode: True
+        from_attributes = True
 
 class LoginRequest(BaseModel):
     email: str
@@ -132,7 +134,7 @@ class FiluppladdningOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     class Config:
-        orm_mode: True
+       
         from_attributes = True 
 
 class MeddelandeOut(BaseModel):
@@ -145,7 +147,7 @@ class MeddelandeOut(BaseModel):
     homework_id: int
      
     class Config:
-        orm_mode: True
+      
         from_attributes = True  # Allow the Pydantic model to read data from SQLAlchemy models
 
 class SubjectBase(BaseModel):
@@ -155,7 +157,7 @@ class SubjectOut(SubjectBase):
     id: int
 
     class Config:
-        orm_mode: True
+       
         from_attributes = True  # Allow the Pydantic model to read data from SQLAlchemy models
 
 class MeddelandeCreate(BaseModel):
@@ -185,8 +187,16 @@ class RecommendedResourceOut(BaseModel):
     homework_id: int
 
     class Config:
-        orm_mode: True
+       
         from_attributes = True
+class TeacherOut(BaseModel):
+    id: int
+    user: UserOut  # Include the related User model
+    subject_id: int
+    qualifications: str
+
+    class Config:
+        from_attributes = True 
 class TeacherCreate(BaseModel):
     user_id: int
     subject_id: Optional[int] = None
@@ -199,11 +209,25 @@ class HomeworkBase(BaseModel):
     status: str = "Pending"
     priority: str = "Normal"
 
-class HomeworkCreate(HomeworkBase):
-    user_id: int  # Added user_id field
-    subject_id: int  # Added subject_id field
+class HomeworkCreate(BaseModel):
+    title: str
+    description: str
+    due_date: str
+    status: str
+    priority: str
+    subject_id: int
     teacher_id: Optional[int] = None
+    user_id: Optional[int] = None
+    arskurs_id: Optional[int] = None
 
+    @model_validator(mode="after")
+    def validate_user_or_arskurs(cls, values):
+        # Access attributes directly instead of using .get()
+        if not values.user_id and not values.arskurs_id:
+            raise ValueError("Either user_id or arskurs_id must be provided.")
+        if values.user_id and values.arskurs_id:
+            raise ValueError("Only one of user_id or arskurs_id can be provided.")
+        return values
 class HomeworkOut(HomeworkBase):
     id: int
     user_id: int
@@ -216,7 +240,7 @@ class HomeworkOut(HomeworkBase):
     recommended_resources: Optional[RecommendedResourceOut] = None
 
     class Config:
-        orm_mode: True
+        from_attributes = True  # Updated from orm_mode
       
 
 class HomeworkInUpdate(BaseModel):
@@ -229,7 +253,7 @@ class HomeworkInUpdate(BaseModel):
     subject_id: Optional[int] = None
 
     class Config:
-        orm_mode: True
+       from_attributes = True
 
 class FiluppladdningCreate(BaseModel):
     filename: str
@@ -250,10 +274,10 @@ class Arskurs(ArskursBase):
     id: int
 
     class Config:
-        orm_mode: True
+       from_attributes = True
 
 class SubjectCreate(BaseModel):
     name: str
 
     class Config:
-        orm_mode: True
+       from_attributes = True

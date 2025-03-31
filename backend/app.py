@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from db_setup import get_db
 import crud
 import uvicorn
-from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, TeacherCreate, UserInUpdate
+from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, TeacherCreate, TeacherOut, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
 from models import Arskurs, Betyg, Filuppladdning, Homework, Meddelande, RecommendedResource, Role, Subject, User, Membership
 from schemas import MembershipCreate
@@ -287,7 +287,18 @@ def get_all_teachers(
     if not teachers:
         raise HTTPException(status_code=404, detail="No teachers found")
     return teachers
-
+@app.get("/teachers/me/", response_model=TeacherOut)
+def get_current_teacher(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve the current teacher's details.
+    """
+    teacher = db.query(Teacher).filter(Teacher.user_id == current_user.id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    return teacher
 @app.post("/memberships/", response_model=MembershipOut)
 def create_membership(
     membership: MembershipCreate,
@@ -447,7 +458,7 @@ def delete_role(
     database.commit()
     return db_role
 # Create homework
-@app.post("/homeworks/", response_model=HomeworkOut)
+@app.post("/homeworks/", response_model=List[HomeworkOut])
 def create_homework_view(
     homework: HomeworkCreate,
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
@@ -456,22 +467,67 @@ def create_homework_view(
     """
     Create a new homework in the database.
     """
-    user = database.query(User).filter(User.id == homework.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    # Validate the teacher
+    teacher = database.query(Teacher).filter(Teacher.user_id == current_user.id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
 
-    new_homework = Homework(
-        title=homework.title,
-        description=homework.description,
-        due_date=homework.due_date,
-        user_id=homework.user_id,
-        subject_id=homework.subject_id
-    )
+    if homework.user_id:
+        # Validate the user
+        user = database.query(User).filter(User.id == homework.user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
 
-    database.add(new_homework)
-    database.commit()
-    database.refresh(new_homework)
-    return new_homework
+        # Create homework for a single user
+        new_homework = Homework(
+            title=homework.title,
+            description=homework.description,
+            due_date=homework.due_date,
+            user_id=homework.user_id,
+            subject_id=homework.subject_id,
+            teacher_id=teacher.id,  # Use the teacher's ID
+        )
+        database.add(new_homework)
+        database.commit()
+        database.refresh(new_homework)
+        return [new_homework]
+
+    elif homework.arskurs_id:
+        # Validate the årskurs
+        arskurs = database.query(Arskurs).filter(Arskurs.id == homework.arskurs_id).first()
+        if not arskurs:
+            raise HTTPException(status_code=404, detail="Årskurs not found")
+
+        # Get all users in the årskurs
+        users_in_arskurs = database.query(User).filter(User.arskurs_id == homework.arskurs_id).all()
+        if not users_in_arskurs:
+            raise HTTPException(status_code=404, detail="No users found in this Årskurs")
+
+        # Create homework for all users in the årskurs
+        new_homeworks = [
+            Homework(
+                title=homework.title,
+                description=homework.description,
+                due_date=homework.due_date,
+                user_id=user.id,
+                subject_id=homework.subject_id,
+                teacher_id=teacher.id,  # Use the teacher's ID
+            )
+            for user in users_in_arskurs
+        ]
+
+        # Use add_all for batch insertion
+        database.add_all(new_homeworks)
+        database.commit()
+
+        # Refresh the objects to return them
+        for homework in new_homeworks:
+            database.refresh(homework)
+
+        return new_homeworks
+
+    else:
+        raise HTTPException(status_code=400, detail="Either user_id or arskurs_id must be provided")
 
 
 @app.get("/homeworks/", response_model=List[HomeworkOut])
@@ -704,7 +760,18 @@ def delete_betyg(
     database.delete(db_betyg)
     database.commit()
     return db_betyg
-
+@app.get("/meddelanden/", response_model=List[MeddelandeOut])
+def get_all_meddelanden(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve all meddelanden from the database.
+    """
+    meddelanden = db.query(Meddelande).all()
+    if not meddelanden:
+        raise HTTPException(status_code=404, detail="No messages found")
+    return meddelanden
 @app.get("/meddelanden/user/{user_id}")
 def get_meddelanden_for_user(
     user_id: int,
@@ -746,22 +813,22 @@ def create_meddelande_view(
     database.refresh(new_meddelande)
     return new_meddelande
 
-@app.delete("/meddelanden/{meddelande_id}", response_model=MeddelandeOut)
+@app.delete("/meddelanden/{meddelande_id}/", status_code=204)
 def delete_meddelande(
     meddelande_id: int,
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
-    database: Session = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
-    Delete a meddelande from the database.
+    Delete a meddelande by its ID.
     """
-    db_meddelande = database.query(Meddelande).filter(Meddelande.id == meddelande_id).first()
-    if not db_meddelande:
-        raise HTTPException(status_code=404, detail="Meddelande not found")
+    meddelande = db.query(Meddelande).filter(Meddelande.id == meddelande_id).first()
+    if not meddelande:
+        raise HTTPException(status_code=404, detail="Message not found")
 
-    database.delete(db_meddelande)
-    database.commit()
-    return db_meddelande
+    db.delete(meddelande)
+    db.commit()
+    return {"detail": "Message deleted successfully"}
 
 
 @app.put("/meddelanden/{meddelande_id}/", response_model=MeddelandeOut)

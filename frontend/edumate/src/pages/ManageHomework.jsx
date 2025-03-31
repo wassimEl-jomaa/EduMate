@@ -3,7 +3,10 @@ import axios from "axios";
 
 const ManageHomework = () => {
   const [homeworks, setHomeworks] = useState([]); // State for the list of homework
-  const [teachers, setTeachers] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+
+  const [teachers, setTeachers] = useState([]); // State for the list of teachers
+  const [arskursList, setArskursList] = useState([]); // State for the list of årskurs
   const [homeworkData, setHomeworkData] = useState({
     title: "",
     description: "",
@@ -12,43 +15,66 @@ const ManageHomework = () => {
     priority: "Normal",
     user_id: "",
     subject_id: "",
-    teacher_name: "",
-  }); // State for homework data
-  const [editingHomeworkId, setEditingHomeworkId] = useState(null); // State for editing homework ID
-  const [successMessage, setSuccessMessage] = useState(""); // State for success message
-  const [errorMessage, setErrorMessage] = useState(""); // State for error message
+    teacher_id: "",
+    arskurs_id: "", // Add arskurs_id to the state
+  });
+  const [assignmentType, setAssignmentType] = useState("single");
+  const [editingHomeworkId, setEditingHomeworkId] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
   // Fetch teachers from the backend
   useEffect(() => {
     const fetchTeachers = async () => {
-      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+      const token = localStorage.getItem("token");
       try {
         const response = await axios.get(
           "http://127.0.0.1:8000/teachers/names/",
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Include the token
+              Authorization: `Bearer ${token}`,
             },
           }
         );
-        setTeachers(response.data); // Ensure teacher_name is part of the response
+        setTeachers(response.data);
       } catch (error) {
         console.error("Error fetching teachers:", error);
         setErrorMessage("Failed to fetch teacher data.");
       }
     };
     fetchTeachers();
-  }, []); // Fetch teachers when the component mounts
+  }, []);
+
+  // Fetch årskurs from the backend
+  useEffect(() => {
+    const fetchArskurs = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await axios.get("http://127.0.0.1:8000/arskurs/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setArskursList(response.data);
+      } catch (error) {
+        console.error("Error fetching årskurs:", error);
+        setErrorMessage("Failed to fetch årskurs data.");
+      }
+    };
+    fetchArskurs();
+  }, []);
+
   // Fetch homework from the backend
   useEffect(() => {
     const fetchHomeworks = async () => {
-      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+      const token = localStorage.getItem("token");
       try {
         const response = await axios.get("http://localhost:8000/homeworks/", {
           headers: {
-            Authorization: `Bearer ${token}`, // Include the token
+            Authorization: `Bearer ${token}`,
           },
         });
-        setHomeworks(response.data); // Ensure teacher_name is part of the response
+        setHomeworks(response.data);
       } catch (error) {
         console.error("Error fetching homeworks:", error);
         setErrorMessage("Failed to fetch homework data.");
@@ -57,7 +83,25 @@ const ManageHomework = () => {
 
     fetchHomeworks();
   }, []);
-  // Add or update homework
+  // Fetch subjects from the backend
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await axios.get("http://127.0.0.1:8000/subjects/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setSubjects(response.data); // Set the fetched subjects in state
+      } catch (error) {
+        console.error("Error fetching subjects:", error);
+        setErrorMessage("Failed to fetch subjects.");
+      }
+    };
+    fetchSubjects();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -66,23 +110,42 @@ const ManageHomework = () => {
       !homeworkData.title ||
       !homeworkData.description ||
       !homeworkData.due_date ||
-      !homeworkData.user_id ||
-      !homeworkData.subject_id
+      !homeworkData.subject_id ||
+      (assignmentType === "single" && !homeworkData.user_id) || // Validate user_id only for single assignment
+      (assignmentType === "all" && !homeworkData.arskurs_id) // Validate arskurs_id only for all årskurs
     ) {
       setErrorMessage("All fields are required.");
       return;
     }
 
     try {
-      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+      const token = localStorage.getItem("token");
+
+      // Prepare the payload based on assignment type
+      const payload = {
+        title: homeworkData.title,
+        description: homeworkData.description,
+        due_date: homeworkData.due_date,
+        status: homeworkData.status,
+        priority: homeworkData.priority,
+        subject_id: homeworkData.subject_id,
+        teacher_id: homeworkData.teacher_id,
+        ...(assignmentType === "single" && { user_id: homeworkData.user_id }), // Include user_id only if single
+        ...(assignmentType === "all" && {
+          arskurs_id: homeworkData.arskurs_id,
+        }), // Include arskurs_id only if all
+      };
+
+      console.log("Payload:", payload); // Debugging log
+
       if (editingHomeworkId) {
         // Update homework
         const response = await axios.put(
           `http://localhost:8000/homeworks/${editingHomeworkId}/`,
-          homeworkData,
+          payload,
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Include the token
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -96,10 +159,10 @@ const ManageHomework = () => {
         // Add new homework
         const response = await axios.post(
           "http://localhost:8000/homeworks/",
-          homeworkData,
+          payload,
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Include the token
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -117,6 +180,8 @@ const ManageHomework = () => {
         priority: "Normal",
         user_id: "",
         subject_id: "",
+        teacher_id: "",
+        arskurs_id: "",
       });
       setEditingHomeworkId(null);
     } catch (error) {
@@ -124,11 +189,14 @@ const ManageHomework = () => {
         "Error managing homework:",
         error.response?.data || error.message
       );
-      setErrorMessage("Failed to manage homework. Please try again.");
+      if (error.response?.data) {
+        setErrorMessage(`Error: ${JSON.stringify(error.response.data)}`);
+      } else {
+        setErrorMessage("Failed to manage homework. Please try again.");
+      }
       setSuccessMessage("");
     }
   };
-
   // Delete homework
   const handleDelete = async (homeworkId) => {
     const token = localStorage.getItem("token"); // Retrieve the token from localStorage
@@ -163,8 +231,10 @@ const ManageHomework = () => {
       priority: homework.priority,
       user_id: homework.user_id,
       subject_id: homework.subject_id,
+      teacher_id: homework.teacher_id,
+      arskurs_id: homework.arskurs_id,
     });
-    setEditingHomeworkId(homework.id);
+    setEditingHomeworkId(homework.id); // Ensure this is set correctly
   };
 
   const handleChange = (e) => {
@@ -179,6 +249,106 @@ const ManageHomework = () => {
     <div className="max-w-lg mx-auto bg-white p-8 border rounded-lg shadow-md mt-10">
       <h1 className="text-2xl font-bold mb-6">Manage Homework</h1>
       <form onSubmit={handleSubmit}>
+        {/* Assignment Type Toggle */}
+        <div className="mb-4">
+          <label className="block text-gray-700 font-semibold mb-2">
+            Assign To
+          </label>
+          <div className="flex items-center space-x-4">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="assignmentType"
+                value="single"
+                checked={assignmentType === "single"}
+                onChange={() => setAssignmentType("single")}
+                className="mr-2"
+              />
+              Single Student
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="assignmentType"
+                value="all"
+                checked={assignmentType === "all"}
+                onChange={() => setAssignmentType("all")}
+                className="mr-2"
+              />
+              All Årskurs
+            </label>
+          </div>
+        </div>
+
+        {/* Conditionally Render Fields */}
+        {assignmentType === "single" && (
+          <div className="mb-4">
+            <label
+              htmlFor="user_id"
+              className="block text-gray-700 font-semibold"
+            >
+              Student ID
+            </label>
+            <input
+              type="number"
+              id="user_id"
+              name="user_id"
+              value={homeworkData.user_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter Student ID"
+            />
+          </div>
+        )}
+
+        {assignmentType === "all" && (
+          <div className="mb-4">
+            <label
+              htmlFor="arskurs_id"
+              className="block text-gray-700 font-semibold"
+            >
+              Årskurs
+            </label>
+            <select
+              id="arskurs_id"
+              name="arskurs_id"
+              value={homeworkData.arskurs_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Årskurs</option>
+              {arskursList.map((arskurs) => (
+                <option key={arskurs.id} value={arskurs.id}>
+                  {arskurs.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Other Form Fields */}
+        <div className="mb-4">
+          <label
+            htmlFor="subject_id"
+            className="block text-gray-700 font-semibold"
+          >
+            Subject
+          </label>
+          <select
+            id="subject_id"
+            name="subject_id"
+            value={homeworkData.subject_id}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select a subject</option>
+            {subjects.map((subject) => (
+              <option key={subject.id} value={subject.id}>
+                {subject.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="mb-4">
           <label htmlFor="title" className="block text-gray-700 font-semibold">
             Title
@@ -260,23 +430,7 @@ const ManageHomework = () => {
             <option value="Low">Low</option>
           </select>
         </div>
-        <div className="mb-4">
-          <label
-            htmlFor="user_id"
-            className="block text-gray-700 font-semibold"
-          >
-            Student_id
-          </label>
-          <input
-            type="number"
-            id="user_id"
-            name="user_id"
-            value={homeworkData.user_id}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter Student  ID"
-          />
-        </div>
+
         <div className="mb-4">
           <label
             htmlFor="teacher_id"
@@ -299,29 +453,16 @@ const ManageHomework = () => {
             ))}
           </select>
         </div>
-        <div className="mb-4">
-          <label
-            htmlFor="subject_id"
-            className="block text-gray-700 font-semibold"
-          >
-            Subject ID
-          </label>
-          <input
-            type="number"
-            id="subject_id"
-            name="subject_id"
-            value={homeworkData.subject_id}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter subject ID"
-          />
-        </div>
+
+        {/* Error and success messages */}
         {errorMessage && (
           <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
         )}
         {successMessage && (
           <p className="text-green-500 text-sm mb-4">{successMessage}</p>
         )}
+
+        {/* Submit button */}
         <button
           type="submit"
           className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-all"
