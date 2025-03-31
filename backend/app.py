@@ -252,6 +252,28 @@ def add_teacher(
     db.refresh(new_teacher)
     return {"message": "Teacher created successfully", "teacher_id": new_teacher.id}
 
+@app.get("/teachers/names/", response_model=List[dict])
+def get_teachers_name(
+    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve all teachers' names from the database.
+    """
+    teachers = db.query(Teacher).all()
+    if not teachers:
+        raise HTTPException(status_code=404, detail="No teachers found")
+    return [
+        {
+            "id": teacher.id,
+            "first_name": teacher.user.first_name,
+            "last_name": teacher.user.last_name,
+            "subject_id": teacher.subject_id,
+            "qualifications": teacher.qualifications,
+        }
+        for teacher in teachers
+    ]
+
 
 @app.get("/teachers/", response_model=List[TeacherCreate])
 def get_all_teachers(
@@ -453,19 +475,22 @@ def create_homework_view(
 
 
 @app.get("/homeworks/", response_model=List[HomeworkOut])
-def get_homeworks(
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
-    db: Session = Depends(get_db)
-):
-    """
-    Get all homework for the current user.
-    """
-    # Ensure the current user has the required role or permissions
-    if current_user.role.name not in ["Admin", "Teacher"]:
-        raise HTTPException(status_code=403, detail="Not authorized to access homework")
-
-    return db.query(Homework).all()
-
+def get_homeworks(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    homeworks = db.query(Homework).all()
+    return [
+        {
+            "id": homework.id,
+            "title": homework.title,
+            "description": homework.description,
+            "due_date": homework.due_date,
+            "status": homework.status,
+            "priority": homework.priority,
+            "user_id": homework.user_id,
+            "subject_id": homework.subject_id,
+            "teacher_name": f"{homework.teacher.user.first_name} {homework.teacher.user.last_name}" if homework.teacher else "Unknown",  # Handle missing teacher
+        }
+        for homework in homeworks
+    ]
 
 @app.get("/homeworks/{user_id}", response_model=List[HomeworkOut])
 def get_homework_by_user_view(

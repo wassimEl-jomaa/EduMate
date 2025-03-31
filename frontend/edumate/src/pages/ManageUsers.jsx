@@ -21,17 +21,24 @@ const ManageUsers = () => {
   // Fetch users from the backend
   useEffect(() => {
     const fetchUsers = async () => {
+      const token = localStorage.getItem("token");
       try {
-        const response = await axios.get("http://localhost:8000/users/");
+        const response = await axios.get("http://localhost:8000/users/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setUsers(response.data);
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error(
+          "Error fetching users:",
+          error.response?.data || error.message
+        );
       }
     };
 
     fetchUsers();
   }, []);
-
   // Add or update a user
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,12 +48,19 @@ const ManageUsers = () => {
       return;
     }
 
+    const token = localStorage.getItem("token");
+
     try {
       if (editingUserId) {
         // Update user
         const response = await axios.patch(
           `http://localhost:8000/users/${editingUserId}`,
-          userData
+          userData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token
+            },
+          }
         );
         setUsers((prevUsers) =>
           prevUsers.map((user) =>
@@ -60,7 +74,12 @@ const ManageUsers = () => {
         // Add user
         const response = await axios.post(
           "http://localhost:8000/users/",
-          userData
+          userData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token
+            },
+          }
         );
         setUsers((prevUsers) => [...prevUsers, response.data]);
         setSuccessMessage(

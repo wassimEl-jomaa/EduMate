@@ -38,10 +38,11 @@ class Teacher(Base):
     __tablename__ = "teacher"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)  # ForeignKey to User table
-    subject_id = Column(Integer, ForeignKey('subject.id'), nullable=True)  # Optional: Subject the teacher teaches
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)  # ForeignKey to User table
+    subject_id = Column(Integer, ForeignKey("subject.id"), nullable=True)  # Optional: Subject the teacher teaches
     qualifications = Column(Text, nullable=True)  # Teacher's qualifications
 
+    homeworks = relationship("Homework", back_populates="teacher")  # Use back_populates
     user = relationship("User", back_populates="teacher")  # Use back_populates instead of backref
     subject = relationship("Subject", backref="teachers")  # Optional: Subject table if you want to associate teachers with subjects
 
@@ -83,14 +84,14 @@ class Homework(Base):
     status = Column(String, default="Pending")
     priority = Column(String, default="Normal")
 
-    # Direct reference to Teacher table instead of User
-    teacher_id = Column(Integer, ForeignKey("teacher.id"))
-    teacher = relationship("Teacher", backref="homeworks")
+    # Direct reference to Teacher table
+    teacher_id = Column(Integer, ForeignKey("teacher.id"), nullable=True)
+    teacher = relationship("Teacher", back_populates="homeworks")  # Use back_populates
 
     user_id = Column(Integer, ForeignKey("user.id"))
     user = relationship("User")
 
-    subject_id = Column(Integer, ForeignKey('subject.id'))  # Foreign key referencing the Subject table
+    subject_id = Column(Integer, ForeignKey("subject.id"))  # Foreign key referencing the Subject table
     subject = relationship("Subject")
     betyg = relationship("Betyg", back_populates="homework", uselist=False)
     meddelande = relationship("Meddelande", back_populates="homework", uselist=False)

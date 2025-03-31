@@ -3,6 +3,7 @@ import axios from "axios";
 
 const ManageHomework = () => {
   const [homeworks, setHomeworks] = useState([]); // State for the list of homework
+  const [teachers, setTeachers] = useState([]);
   const [homeworkData, setHomeworkData] = useState({
     title: "",
     description: "",
@@ -11,11 +12,32 @@ const ManageHomework = () => {
     priority: "Normal",
     user_id: "",
     subject_id: "",
+    teacher_name: "",
   }); // State for homework data
   const [editingHomeworkId, setEditingHomeworkId] = useState(null); // State for editing homework ID
   const [successMessage, setSuccessMessage] = useState(""); // State for success message
   const [errorMessage, setErrorMessage] = useState(""); // State for error message
-
+  // Fetch teachers from the backend
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+      try {
+        const response = await axios.get(
+          "http://127.0.0.1:8000/teachers/names/",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token
+            },
+          }
+        );
+        setTeachers(response.data); // Ensure teacher_name is part of the response
+      } catch (error) {
+        console.error("Error fetching teachers:", error);
+        setErrorMessage("Failed to fetch teacher data.");
+      }
+    };
+    fetchTeachers();
+  }, []); // Fetch teachers when the component mounts
   // Fetch homework from the backend
   useEffect(() => {
     const fetchHomeworks = async () => {
@@ -26,7 +48,7 @@ const ManageHomework = () => {
             Authorization: `Bearer ${token}`, // Include the token
           },
         });
-        setHomeworks(response.data);
+        setHomeworks(response.data); // Ensure teacher_name is part of the response
       } catch (error) {
         console.error("Error fetching homeworks:", error);
         setErrorMessage("Failed to fetch homework data.");
@@ -35,7 +57,6 @@ const ManageHomework = () => {
 
     fetchHomeworks();
   }, []);
-
   // Add or update homework
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -244,7 +265,7 @@ const ManageHomework = () => {
             htmlFor="user_id"
             className="block text-gray-700 font-semibold"
           >
-            User ID
+            Student_id
           </label>
           <input
             type="number"
@@ -253,8 +274,30 @@ const ManageHomework = () => {
             value={homeworkData.user_id}
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter user ID"
+            placeholder="Enter Student  ID"
           />
+        </div>
+        <div className="mb-4">
+          <label
+            htmlFor="teacher_id"
+            className="block text-gray-700 font-semibold"
+          >
+            Teacher
+          </label>
+          <select
+            id="teacher_id"
+            name="teacher_id"
+            value={homeworkData.teacher_id}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select a teacher</option>
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.first_name} {teacher.last_name}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="mb-4">
           <label
