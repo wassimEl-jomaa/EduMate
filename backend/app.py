@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from db_setup import get_db
 import crud
 import uvicorn
-from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, TeacherCreate, TeacherOut, UserInUpdate
+from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygOutStudent, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, TeacherCreate, TeacherOut, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
 from models import Arskurs, Betyg, Filuppladdning, Homework, Meddelande, RecommendedResource, Role, Subject, User, Membership
 from schemas import MembershipCreate
@@ -547,7 +547,18 @@ def get_homeworks(current_user: User = Depends(get_current_user), db: Session = 
         }
         for homework in homeworks
     ]
-
+@app.get("/homeworks/me", response_model=List[HomeworkOut])
+def get_my_homeworks(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all homework for the currently logged-in student.
+    """
+    homeworks = db.query(Homework).filter(Homework.user_id == current_user.id).all()
+    if not homeworks:
+        raise HTTPException(status_code=404, detail="No homework found for this user")
+    return homeworks
 @app.get("/homeworks/{user_id}", response_model=List[HomeworkOut])
 def get_homework_by_user_view(
     user_id: int,
@@ -688,21 +699,70 @@ def read_betyg(
     return betyg
 
 
+@app.get("/betyg/me", response_model=List[BetygOutStudent])
+def get_my_betyg(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all betyg for the currently logged-in user, including homework title and subject.
+    """
+    betyg = (
+        db.query(
+            Betyg.id,
+            Betyg.grade,
+            Betyg.comments,
+            Betyg.feedback,
+            Betyg.created_at,
+            Betyg.updated_at,
+            Betyg.homework_id,
+            Homework.title.label("homework_title"),  # Include homework title
+            Subject.name.label("subject")  # Include subject name
+        )
+        .join(Homework, Betyg.homework_id == Homework.id)
+        .join(Subject, Homework.subject_id == Subject.id)
+        .filter(Betyg.user_id == current_user.id)
+        .all()
+    )
+
+    if not betyg:
+        raise HTTPException(status_code=404, detail="No grades found for this user")
+
+    # Convert the query result into a list of dictionaries
+    result = [
+        {
+            "id": b.id,
+            "grade": b.grade,
+            "comments": b.comments,
+            "feedback": b.feedback,
+            "created_at": b.created_at,
+            "updated_at": b.updated_at,
+            "homework_id": b.homework_id,
+            "homework_title": b.homework_title,
+            "subject": b.subject,
+        }
+        for b in betyg
+    ]
+
+    return result
 @app.get("/betyg/user/{user_id}", response_model=List[BetygOut])
 def get_betyg_for_user(
     user_id: int,
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Get all betyg for a specific user.
     """
     # Ensure the current user is authorized to access this user's betyg
-    if current_user.id != user_id and current_user.role.name != "Admin":
+    if current_user.id != user_id and current_user.role.name not in ["Admin", "Teacher"]:
         raise HTTPException(status_code=403, detail="Not authorized to access this user's betyg")
 
-    return db.query(Betyg).filter(Betyg.user_id == user_id).all()
+    betyg = db.query(Betyg).filter(Betyg.user_id == user_id).all()
+    if not betyg:
+        raise HTTPException(status_code=404, detail="No betyg found for this user")
 
+    return betyg
 @app.post("/betyg/", response_model=BetygOut)
 def create_betyg_view(
     betyg: BetygCreate,

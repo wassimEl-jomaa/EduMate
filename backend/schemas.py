@@ -109,8 +109,23 @@ class BetygOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     homework_id: int
+    
+
     class Config:
         from_attributes = True  # Allows Pydantic to read data from SQLAlchemy models
+class BetygOutStudent(BaseModel):
+    id: int
+    grade: str
+    comments: Optional[str]
+    feedback: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    homework_id: int
+    homework_title: Optional[str]  # Add homework title
+    subject: Optional[str]  # Add subject name
+
+    class Config:
+        from_attributes = True  # Allows Pydantic to read data from SQLAlchemy models        
 class BetygCreate(BaseModel):
     grade: str
     comments: str

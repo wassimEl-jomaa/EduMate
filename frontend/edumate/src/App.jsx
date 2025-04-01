@@ -13,7 +13,7 @@ import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
 import AddRole from "./pages/AddRole";
 import Profil from "./pages/Profil";
-import Admin from "./pages/Admin"; // Import the Admin component
+import Admin from "./pages/Admin";
 import ManageUsers from "./pages/ManageUsers";
 import ManageMemberships from "./pages/ManageMemberships";
 import ManageArskurs from "./pages/ManageArskurs";
@@ -24,6 +24,7 @@ import BetygPage from "./pages/BetygPage";
 import ManageSubjects from "./pages/ManageSubjects";
 import decodeToken from "./utils/utils";
 import Teachers from "./pages/Teachers";
+import ManageBetyg from "./pages/ManageBetyg";
 
 const App = () => {
   var message = null;
@@ -64,7 +65,7 @@ const App = () => {
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/profil" element={<Profil userId={userId} />} />
         <Route path="/minsida" element={<MinSida userId={userId} />} />
-        <Route path="/admin" element={<Admin />} /> {/* Add the Admin route */}
+        <Route path="/admin" element={<Admin />} />
         <Route path="/personliglarplan" element={<PersonligLärplan />} />
         <Route path="/aboutus" element={<AboutUs />} />
         <Route path="/contactus" element={<ContactUs />} />
@@ -80,7 +81,19 @@ const App = () => {
           path="/meddelande"
           element={<MeddelandePage userId={userId} />}
         />
-        <Route path="/betyg" element={<BetygPage userId={userId} />} />
+        {/* Conditional Route for Betyg */}
+        <Route
+          path="/betyg"
+          element={
+            role === "Student" ? (
+              <BetygPage />
+            ) : role === "Admin" || role === "Teacher" ? (
+              <ManageBetyg userId={userId} />
+            ) : (
+              <div className="p-6 text-red-500">Access Denied</div>
+            )
+          }
+        />
       </Routes>
 
       <Footer />
