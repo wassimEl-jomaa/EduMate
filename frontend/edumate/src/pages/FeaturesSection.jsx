@@ -6,19 +6,18 @@ const FeaturesSection = () => {
       {/* Välkommen Sektion */}
       <div className="text-center mb-12">
         <h2 className="text-3xl font-semibold text-blue-800 mb-4">
-          Välkommen till vår AI-drivna Läxhjälp!
+          Välkommen till vår Plattform!
         </h2>
         <p className="text-lg text-gray-700 mb-6">
-          Välkommen till vår innovativa lärplattform där AI hjälper dig att nå
-          dina akademiska mål. Vi erbjuder en personlig lärplan som anpassar sig
-          efter dina behov och framsteg, så att du kan lära dig på ditt sätt och
-          i din egen takt.
+          Välkommen till vår innovativa lärplattform! Vi är glada att du har
+          valt att använda vårt system som är designat för att göra utbildning
+          mer effektiv, interaktiv och tillgänglig för både elever och lärare.
         </p>
         <p className="text-lg text-gray-700 mb-6">
-          Med vår plattform får du skräddarsydda uppgifter och övningar, och
-          kontinuerlig feedback som hjälper dig att förbättra dina färdigheter.
-          AI:n följer din utveckling och justerar övningarna i realtid, vilket
-          ger dig en unik och effektiv inlärningsupplevelse.
+          Vår plattform erbjuder en rad funktioner som underlättar planering,
+          bedömning, kommunikation och uppföljning av elevernas framsteg.
+          Oavsett om du är lärare, elev eller förälder, finns det verktyg här
+          för att göra din upplevelse så smidig och engagerande som möjligt.
         </p>
         <p className="text-lg text-gray-700">
           Låt oss hjälpa dig att nå dina mål och ta nästa steg mot framgång!
@@ -32,29 +31,30 @@ const FeaturesSection = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
         <div className="bg-gray-100 p-6 rounded-lg shadow-md">
           <h3 className="text-xl font-bold text-blue-800 mb-4">
-            Anpassad Lärplan
+            För föräldrar
           </h3>
           <p className="text-gray-700">
-            AI analyserar styrkor och svagheter för att skapa en individuell
-            lärplan som hjälper till att förbättra svaga områden.
+            Som förälder kan du enkelt följa ditt barns framsteg, ta del av
+            uppdateringar om deras utveckling och aktivt stötta deras lärande.
+            Vår plattform ger dig den information du behöver för att hålla dig
+            uppdaterad och vara delaktig i ditt barns utbildning.
           </p>
         </div>
         <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-bold text-blue-800 mb-4">
-            Progressionsspårning
-          </h3>
+          <h3 className="text-xl font-bold text-blue-800 mb-4">För lärare</h3>
           <p className="text-gray-700">
-            AI följer din utveckling och justerar svårighetsgraden för att passa
-            din inlärningstakt.
+            Du kan enkelt skapa läxor, bedöma elevernas prestationer och ge
+            kontinuerlig feedback på ett strukturerat och effektivt sätt. Vår
+            plattform gör det möjligt att följa upp och stödja elevernas
+            utveckling genom hela lärprocessen.
           </p>
         </div>
         <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-bold text-blue-800 mb-4">
-            Omfattande Rapportering
-          </h3>
+          <h3 className="text-xl font-bold text-blue-800 mb-4">För elever</h3>
           <p className="text-gray-700">
-            Detaljerade rapporter för att följa framsteg och identifiera
-            problemområden som behöver åtgärdas.
+            Här hittar du din personliga lärplan, anpassade uppgifter och
+            feedback som är utformade för att stödja dig på vägen mot att nå
+            dina mål.
           </p>
         </div>
       </div>
