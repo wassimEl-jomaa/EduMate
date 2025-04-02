@@ -1112,10 +1112,10 @@ def create_subject(
     return new_subject
 
 
-@app.delete("/subjects/{subject_id}", response_model=SubjectOut)
+@app.delete("/subjects/{subject_id}/", response_model=SubjectOut)
 def delete_subject(
     subject_id: int,
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    current_user: User = Depends(get_current_user),
     database: Session = Depends(get_db)
 ):
     """

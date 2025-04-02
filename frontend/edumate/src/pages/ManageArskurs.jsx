@@ -16,18 +16,26 @@ const ManageArskurs = () => {
   // Fetch Arskurs from the backend
   useEffect(() => {
     const fetchArskurs = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
       try {
-        const response = await axios.get("http://localhost:8000/arskurs/");
+        const response = await axios.get("http://localhost:8000/arskurs/", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          },
+        });
         setArskursList(response.data);
       } catch (error) {
-        console.error("Error fetching Arskurs:", error);
+        console.error(
+          "Error fetching Arskurs:",
+          error.response?.data || error.message
+        );
+        setErrorMessage("Failed to fetch Arskurs. Please try again.");
       }
     };
 
     fetchArskurs();
   }, []);
 
-  // Add or update an Arskurs
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -36,12 +44,19 @@ const ManageArskurs = () => {
       return;
     }
 
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+
     try {
       if (editingArskursId) {
         // Update Arskurs
         const response = await axios.patch(
           `http://localhost:8000/arskurs/${editingArskursId}/`,
-          arskursData
+          arskursData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+            },
+          }
         );
         setArskursList((prevArskurs) =>
           prevArskurs.map((arskurs) =>
@@ -55,7 +70,12 @@ const ManageArskurs = () => {
         // Add Arskurs
         const response = await axios.post(
           "http://localhost:8000/arskurs/",
-          arskursData
+          arskursData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+            },
+          }
         );
         setArskursList((prevArskurs) => [...prevArskurs, response.data]);
         setSuccessMessage(
@@ -83,8 +103,13 @@ const ManageArskurs = () => {
 
   // Delete an Arskurs
   const handleDelete = async (arskursId) => {
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
     try {
-      await axios.delete(`http://localhost:8000/arskurs/${arskursId}/`);
+      await axios.delete(`http://localhost:8000/arskurs/${arskursId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+        },
+      });
       setArskursList((prevArskurs) =>
         prevArskurs.filter((arskurs) => arskurs.id !== arskursId)
       );
