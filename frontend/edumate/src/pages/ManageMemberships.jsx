@@ -15,11 +15,20 @@ const ManageMemberships = () => {
   // Fetch memberships from the backend
   useEffect(() => {
     const fetchMemberships = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
       try {
-        const response = await axios.get("http://localhost:8000/memberships/");
+        const response = await axios.get("http://localhost:8000/memberships/", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          },
+        });
         setMemberships(response.data);
       } catch (error) {
-        console.error("Error fetching memberships:", error);
+        console.error(
+          "Error fetching memberships:",
+          error.response?.data || error.message
+        );
+        setErrorMessage("Failed to fetch memberships. Please try again.");
       }
     };
 
@@ -39,12 +48,19 @@ const ManageMemberships = () => {
       return;
     }
 
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+
     try {
       if (editingMembershipId) {
         // Update membership
         const response = await axios.put(
           `http://localhost:8000/memberships/${editingMembershipId}/`,
-          membershipData
+          membershipData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+            },
+          }
         );
         setMemberships((prevMemberships) =>
           prevMemberships.map((membership) =>
@@ -56,7 +72,12 @@ const ManageMemberships = () => {
         // Add new membership
         const response = await axios.post(
           "http://localhost:8000/memberships/",
-          membershipData
+          membershipData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+            },
+          }
         );
         setMemberships((prevMemberships) => [
           ...prevMemberships,
@@ -80,8 +101,13 @@ const ManageMemberships = () => {
 
   // Delete a membership
   const handleDelete = async (membershipId) => {
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
     try {
-      await axios.delete(`http://localhost:8000/memberships/${membershipId}/`);
+      await axios.delete(`http://localhost:8000/memberships/${membershipId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+        },
+      });
       setMemberships((prevMemberships) =>
         prevMemberships.filter((membership) => membership.id !== membershipId)
       );

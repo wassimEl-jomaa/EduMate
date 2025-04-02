@@ -164,7 +164,12 @@ class MeddelandeOut(BaseModel):
     class Config:
       
         from_attributes = True  # Allow the Pydantic model to read data from SQLAlchemy models
+class SubjectUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
 
+    class Config:
+        from_attributes = True 
 class SubjectBase(BaseModel):
     name: str
 

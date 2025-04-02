@@ -12,10 +12,15 @@ const AddRole = () => {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/roles/");
+        const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+        const response = await axios.get("http://localhost:8000/roles/", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          },
+        });
         setRoles(response.data);
       } catch (error) {
-        console.error("Error fetching roles:", error);
+        console.error("Error fetching roles:", error.response || error);
       }
     };
 

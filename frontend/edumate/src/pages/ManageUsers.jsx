@@ -112,8 +112,13 @@ const ManageUsers = () => {
 
   // Delete a user
   const handleDelete = async (userId) => {
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
     try {
-      await axios.delete(`http://localhost:8000/users/${userId}/`);
+      await axios.delete(`http://localhost:8000/users/${userId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+        },
+      });
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
       setSuccessMessage("User deleted successfully!");
       setErrorMessage("");

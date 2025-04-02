@@ -14,18 +14,25 @@ const ManageSubjects = () => {
   // Fetch subjects from the backend
   useEffect(() => {
     const fetchSubjects = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
       try {
-        const response = await axios.get("http://localhost:8000/subjects/");
+        const response = await axios.get("http://localhost:8000/subjects/", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          },
+        });
         setSubjects(response.data);
       } catch (error) {
-        console.error("Error fetching subjects:", error);
+        console.error(
+          "Error fetching subjects:",
+          error.response?.data || error.message
+        );
+        setErrorMessage("Failed to fetch subjects. Please try again.");
       }
     };
 
     fetchSubjects();
   }, []);
-
-  // Add or update a subject
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -35,11 +42,18 @@ const ManageSubjects = () => {
     }
 
     try {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+
       if (editingSubjectId) {
         // Update subject
         const response = await axios.put(
           `http://localhost:8000/subjects/${editingSubjectId}/`,
-          subjectData
+          subjectData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+            },
+          }
         );
         setSubjects((prevSubjects) =>
           prevSubjects.map((subject) =>
@@ -51,7 +65,12 @@ const ManageSubjects = () => {
         // Add new subject
         const response = await axios.post(
           "http://localhost:8000/subjects/",
-          subjectData
+          subjectData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+            },
+          }
         );
         setSubjects((prevSubjects) => [...prevSubjects, response.data]);
         setSuccessMessage("Subject added successfully!");
@@ -72,8 +91,13 @@ const ManageSubjects = () => {
 
   // Delete a subject
   const handleDelete = async (subjectId) => {
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
     try {
-      await axios.delete(`http://localhost:8000/subjects/${subjectId}/`);
+      await axios.delete(`http://localhost:8000/subjects/${subjectId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+        },
+      });
       setSubjects((prevSubjects) =>
         prevSubjects.filter((subject) => subject.id !== subjectId)
       );

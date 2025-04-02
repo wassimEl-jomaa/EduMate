@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from db_setup import get_db
 import crud
 import uvicorn
-from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygOutStudent, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, TeacherCreate, TeacherOut, UserInUpdate
+from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygOutStudent, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, SubjectUpdate, TeacherCreate, TeacherOut, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
 from models import Arskurs, Betyg, Filuppladdning, Homework, Meddelande, RecommendedResource, Role, Subject, User, Membership
 from schemas import MembershipCreate
@@ -1130,24 +1130,25 @@ def delete_subject(
     return db_subject
 
 
-@app.patch("/subjects/{subject_id}", response_model=SubjectOut)
+@app.put("/subjects/{subject_id}", response_model=SubjectOut)
 def update_subject(
     subject_id: int,
-    subject: SubjectCreate,
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
-    database: Session = Depends(get_db)
+    subject_data: SubjectUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
-    Update an existing subject in the database.
+    Update a subject.
     """
-    db_subject = database.query(Subject).filter(Subject.id == subject_id).first()
-    if not db_subject:
-        raise HTTPException(status_code=404, detail="Subject not found")
-
-    # Update fields
-    db_subject.name = subject.name
-    database.commit()
-    database.refresh(db_subject)
-    return db_subject
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found.")
+    
+    for key, value in subject_data.dict(exclude_unset=True).items():
+        setattr(subject, key, value)
+    
+    db.commit()
+    db.refresh(subject)
+    return subject
 if __name__ == '__main__':
     uvicorn.run(app)
