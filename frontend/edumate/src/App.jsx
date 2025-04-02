@@ -25,6 +25,7 @@ import ManageSubjects from "./pages/ManageSubjects";
 import decodeToken from "./utils/utils";
 import Teachers from "./pages/Teachers";
 import ManageBetyg from "./pages/ManageBetyg";
+import ManageTeachers from "./pages/ManageTeacher";
 
 const App = () => {
   var message = null;
@@ -77,6 +78,9 @@ const App = () => {
         <Route path="/manage-meddelanden" element={<ManageMeddelanden />} />
         <Route path="/manage-homework" element={<ManageHomework />} />
         <Route path="/teacher" element={<Teachers userId={userId} />} />
+        <Route path="/manage-teachers" element={<ManageTeachers />} />{" "}
+        {/* Add this route */}
+        {/* Add this route */}
         <Route
           path="/meddelande"
           element={<MeddelandePage userId={userId} />}

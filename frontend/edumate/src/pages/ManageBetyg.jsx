@@ -34,7 +34,11 @@ const ManageBetyg = ({ userId }) => {
         setBetygList(response.data);
         setLoading(false);
       } catch (err) {
-        setError(err.response?.data?.detail || "Failed to fetch grades");
+        if (err.response?.status === 404) {
+          setError("No betyg found for this user.");
+        } else {
+          setError(err.response?.data?.detail || "Failed to fetch grades");
+        }
         setLoading(false);
       }
     };

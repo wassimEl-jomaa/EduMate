@@ -175,6 +175,7 @@ class SubjectBase(BaseModel):
 
 class SubjectOut(SubjectBase):
     id: int
+    name: Optional[str] = None
 
     class Config:
        
@@ -211,9 +212,10 @@ class RecommendedResourceOut(BaseModel):
         from_attributes = True
 class TeacherOut(BaseModel):
     id: int
-    user: UserOut  # Include the related User model
-    subject_id: int
-    qualifications: str
+    user: UserOut  # Nested User schema
+    subject:SubjectOut
+    qualifications: Optional[str]
+    photo: Optional[str]
 
     class Config:
         from_attributes = True 

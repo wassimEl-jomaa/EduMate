@@ -41,7 +41,7 @@ class Teacher(Base):
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)  # ForeignKey to User table
     subject_id = Column(Integer, ForeignKey("subject.id"), nullable=True)  # Optional: Subject the teacher teaches
     qualifications = Column(Text, nullable=True)  # Teacher's qualifications
-
+    photo = Column(String, nullable=True)
     homeworks = relationship("Homework", back_populates="teacher")  # Use back_populates
     user = relationship("User", back_populates="teacher")  # Use back_populates instead of backref
     subject = relationship("Subject", backref="teachers")  # Optional: Subject table if you want to associate teachers with subjects

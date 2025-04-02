@@ -275,17 +275,18 @@ def get_teachers_name(
     ]
 
 
-@app.get("/teachers/", response_model=List[TeacherCreate])
+@app.get("/teachers/", response_model=List[TeacherOut])
 def get_all_teachers(
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve all teachers from the database.
+    Retrieve all teachers.
     """
+    if current_user.role.name not in ["Admin", "Teacher"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view teachers.")
+    
     teachers = db.query(Teacher).all()
-    if not teachers:
-        raise HTTPException(status_code=404, detail="No teachers found")
     return teachers
 @app.get("/teachers/me/", response_model=TeacherOut)
 def get_current_teacher(

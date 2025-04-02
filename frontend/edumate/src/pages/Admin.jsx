@@ -16,14 +16,7 @@ const Admin = () => {
               User
             </Link>
           </li>
-          <li>
-            <Link
-              to="/betyg"
-              className="block text-lg text-blue-800 hover:text-blue-600"
-            >
-              Beytg
-            </Link>
-          </li>
+
           <li>
             <Link
               to="/manage-meddelanden"
@@ -58,10 +51,10 @@ const Admin = () => {
           </li>
           <li>
             <Link
-              to="/manage-homework"
+              to="/manage-teachers"
               className="block text-lg text-blue-800 hover:text-blue-600"
             >
-              Homework
+              Teacher
             </Link>
           </li>
           <li>
