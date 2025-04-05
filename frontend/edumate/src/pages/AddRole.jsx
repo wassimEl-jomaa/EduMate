@@ -62,13 +62,13 @@ const AddRole = () => {
         setSuccessMessage(`Role "${response.data.name}" updated successfully!`);
       } else {
         // Add role
-        console.log("Submitting role data:", { name: role_name }); // Debug log
+        console.log("Submitting role data:", role_name); // Debug log
         const response = await axios.post(
           "http://localhost:8000/roles/",
-          { name: role_name }, // Ensure the field matches the backend schema
+          { role_name: role_name }, // Send role_name in the request body
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
             },
           }
         );
@@ -97,8 +97,18 @@ const AddRole = () => {
 
   // Delete a role
   const handleDelete = async (roleId) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setErrorMessage("You are not authenticated. Please log in.");
+      return;
+    }
+
     try {
-      await axios.delete(`http://localhost:8000/roles/${roleId}/`);
+      await axios.delete(`http://localhost:8000/roles/${roleId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+        },
+      });
       setRoles((prevRoles) => prevRoles.filter((role) => role.id !== roleId));
       setSuccessMessage("Role deleted successfully!");
       setErrorMessage("");
@@ -107,7 +117,13 @@ const AddRole = () => {
         "Error deleting role:",
         error.response?.data || error.message
       );
-      setErrorMessage("Failed to delete role. Please try again.");
+      if (error.response?.status === 403) {
+        setErrorMessage("You do not have permission to delete roles.");
+      } else if (error.response?.status === 404) {
+        setErrorMessage("Role not found.");
+      } else {
+        setErrorMessage("Failed to delete role. Please try again.");
+      }
       setSuccessMessage("");
     }
   };

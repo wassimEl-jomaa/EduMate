@@ -61,7 +61,8 @@ class RoleOut(Role):
 
     class Config:
         from_attributes = True  # Allows Pydantic to read data from SQLAlchemy models
-
+class RoleCreate(BaseModel):
+    role_name: str
 class UserInUpdate(BaseModel):
     username: Optional[str] = None
     first_name: Optional[str] = None

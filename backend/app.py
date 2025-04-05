@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from db_setup import get_db
 import crud
 import uvicorn
-from schemas import ArskursBase, ArskursCreate, ArskursOut, BetygCreate, BetygOut, BetygOutStudent, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, SubjectUpdate, TeacherCreate, TeacherOut, UserInUpdate
+from schemas import ArskursBase, ArskursCreate, ArskursOut, BetygCreate, BetygOut, BetygOutStudent, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, RoleCreate, SubjectCreate, SubjectOut, SubjectUpdate, TeacherCreate, TeacherOut, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
 from models import Arskurs, Betyg, Filuppladdning, Homework, Meddelande, RecommendedResource, Role, Subject, User, Membership
 from schemas import MembershipCreate
@@ -373,20 +373,18 @@ def delete_membership_view(
 # Endpoint to assign a role to a user
 @app.post("/roles/", response_model=RoleOut)
 def create_role(
-    role_name: str,
+    role: RoleCreate,  # Use a Pydantic model to parse JSON body
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
     database: Session = Depends(get_db)
 ):
-    # Check if the current user has an admin role
-    if current_user.role.name != "Admin":  # Adjust the role name as per your database
+    if current_user.role.name != "Admin":  # Ensure the user has admin privileges
         raise HTTPException(status_code=403, detail="You do not have permission to create roles.")
 
-    new_role = Role(name=role_name)
+    new_role = Role(name=role.role_name)  # Access role_name from the Pydantic model
     database.add(new_role)
     database.commit()
     database.refresh(new_role)
     return new_role
-
 
 @app.post("/users/{user_id}/roles/{role_id}")
 def assign_role_to_user(
