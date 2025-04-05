@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const AddRole = () => {
-  const [roleName, setRoleName] = useState(""); // State for role name
+  const [role_name, setRoleName] = useState(""); // State for role name
   const [roles, setRoles] = useState([]); // State for the list of roles
   const [successMessage, setSuccessMessage] = useState(""); // State for success message
   const [errorMessage, setErrorMessage] = useState(""); // State for error message
@@ -31,8 +31,14 @@ const AddRole = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!roleName) {
+    if (!role_name) {
       setErrorMessage("Role name is required.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setErrorMessage("You are not authenticated. Please log in.");
       return;
     }
 
@@ -41,7 +47,12 @@ const AddRole = () => {
         // Update role
         const response = await axios.put(
           `http://localhost:8000/roles/${editingRoleId}/`,
-          { name: roleName }
+          { name: role_name },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         setRoles((prevRoles) =>
           prevRoles.map((role) =>
@@ -51,10 +62,15 @@ const AddRole = () => {
         setSuccessMessage(`Role "${response.data.name}" updated successfully!`);
       } else {
         // Add role
+        console.log("Submitting role data:", { name: role_name }); // Debug log
         const response = await axios.post(
-          `http://localhost:8000/roles/?role_name=${encodeURIComponent(
-            roleName
-          )}`
+          "http://localhost:8000/roles/",
+          { name: role_name }, // Ensure the field matches the backend schema
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         setRoles((prevRoles) => [...prevRoles, response.data]);
         setSuccessMessage(`Role "${response.data.name}" added successfully!`);
@@ -68,7 +84,13 @@ const AddRole = () => {
         "Error managing role:",
         error.response?.data || error.message
       );
-      setErrorMessage("Failed to manage role. Please try again.");
+      if (error.response?.status === 422) {
+        setErrorMessage("Invalid role data. Please check your input.");
+      } else if (error.response?.status === 403) {
+        setErrorMessage("You do not have permission to manage roles.");
+      } else {
+        setErrorMessage("Failed to manage role. Please try again.");
+      }
       setSuccessMessage("");
     }
   };
@@ -111,7 +133,7 @@ const AddRole = () => {
             type="text"
             id="roleName"
             name="roleName"
-            value={roleName}
+            value={role_name}
             onChange={(e) => setRoleName(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter role name"

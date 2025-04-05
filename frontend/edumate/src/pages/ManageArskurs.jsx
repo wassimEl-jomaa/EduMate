@@ -6,8 +6,8 @@ const ManageArskurs = () => {
   const [arskursData, setArskursData] = useState({
     name: "",
     description: "",
-    skola: "",
     klass: "",
+    skola_id: null, // Add skola_id to the state
   }); // State for Arskurs data
   const [editingArskursId, setEditingArskursId] = useState(null); // State for editing Arskurs ID
   const [successMessage, setSuccessMessage] = useState(""); // State for success message
@@ -44,13 +44,15 @@ const ManageArskurs = () => {
       return;
     }
 
+    console.log("Submitting Arskurs Data:", arskursData); // Log the data
+
     const token = localStorage.getItem("token"); // Retrieve the token from localStorage
 
     try {
       if (editingArskursId) {
         // Update Arskurs
         const response = await axios.patch(
-          `http://localhost:8000/arskurs/${editingArskursId}/`,
+          `http://localhost:8000/arskurs/${editingArskursId}`,
           arskursData,
           {
             headers: {
@@ -87,8 +89,8 @@ const ManageArskurs = () => {
       setArskursData({
         name: "",
         description: "",
-        skola: "",
         klass: "",
+        skola_id: null,
       });
       setEditingArskursId(null);
     } catch (error) {
@@ -130,8 +132,8 @@ const ManageArskurs = () => {
     setArskursData({
       name: arskurs.name,
       description: arskurs.description,
-      skola: arskurs.skola,
       klass: arskurs.klass,
+      skola_id: arskurs.skola_id || null, // Ensure skola_id is included
     });
     setEditingArskursId(arskurs.id);
   };
@@ -140,7 +142,7 @@ const ManageArskurs = () => {
     const { name, value } = e.target;
     setArskursData((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: name === "skola_id" ? parseInt(value) || null : value, // Parse skola_id as an integer
     }));
   };
 
@@ -179,17 +181,20 @@ const ManageArskurs = () => {
           />
         </div>
         <div className="mb-4">
-          <label htmlFor="skola" className="block text-gray-700 font-semibold">
-            Skola
+          <label
+            htmlFor="skola_id"
+            className="block text-gray-700 font-semibold"
+          >
+            Skola ID
           </label>
           <input
-            type="text"
-            id="skola"
-            name="skola"
-            value={arskursData.skola}
+            type="number"
+            id="skola_id"
+            name="skola_id"
+            value={arskursData.skola_id || ""}
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter skola"
+            placeholder="Enter Skola ID"
           />
         </div>
         <div className="mb-4">

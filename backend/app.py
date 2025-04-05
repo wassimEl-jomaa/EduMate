@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from db_setup import get_db
 import crud
 import uvicorn
-from schemas import ArskursCreate, Arskurs as ArskursSchema, BetygCreate, BetygOut, BetygOutStudent, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, SubjectUpdate, TeacherCreate, TeacherOut, UserInUpdate
+from schemas import ArskursBase, ArskursCreate, ArskursOut, BetygCreate, BetygOut, BetygOutStudent, BetygUpdate, FiluppladdningCreate, FiluppladdningOut, HomeworkCreate, HomeworkInUpdate, MeddelandeCreate, MeddelandeOut, MembershipUpdate, RecommendedResourceCreate, RecommendedResourceOut, SubjectCreate, SubjectOut, SubjectUpdate, TeacherCreate, TeacherOut, UserInUpdate
 from schemas import GetUser, HomeworkBase, HomeworkOut, UserIn, UserOut, MembershipOut
 from models import Arskurs, Betyg, Filuppladdning, Homework, Meddelande, RecommendedResource, Role, Subject, User, Membership
 from schemas import MembershipCreate
@@ -377,11 +377,15 @@ def create_role(
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
     database: Session = Depends(get_db)
 ):
-    """
-    Create a new role in the database.
-    """
-    role = crud.add_role(database, role_name)
-    return role
+    # Check if the current user has an admin role
+    if current_user.role.name != "Admin":  # Adjust the role name as per your database
+        raise HTTPException(status_code=403, detail="You do not have permission to create roles.")
+
+    new_role = Role(name=role_name)
+    database.add(new_role)
+    database.commit()
+    database.refresh(new_role)
+    return new_role
 
 
 @app.post("/users/{user_id}/roles/{role_id}")
@@ -988,26 +992,28 @@ def update_filuppladdning(
     return db_filuppladdning
 
 
-@app.post("/arskurs/", response_model=ArskursSchema)
+@app.post("/arskurs/", response_model=ArskursOut)
 def create_arskurs(
     arskurs: ArskursCreate,
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
-    db: Session = Depends(get_db)
+    database: Session = Depends(get_db)
 ):
     """
     Create a new Årskurs in the database.
     """
-    get_class = db.query(Arskurs).filter(Arskurs.name == arskurs.name).first()
-    if get_class:
-        raise HTTPException(status_code=400, detail="Class already exists")
-    db_arskurs = Arskurs(name=arskurs.name, description=arskurs.description, skola=arskurs.skola, klass=arskurs.klass)
-    db.add(db_arskurs)
-    db.commit()
-    db.refresh(db_arskurs)
+    db_arskurs = Arskurs(
+        name=arskurs.name,
+        description=arskurs.description,
+        skola_id=arskurs.skola_id,  # Use skola_id instead of skola
+        klass=arskurs.klass
+    )
+    database.add(db_arskurs)
+    database.commit()
+    database.refresh(db_arskurs)
     return db_arskurs
 
 
-@app.get("/arskurs/", response_model=List[ArskursSchema])
+@app.get("/arskurs/", response_model=List[ArskursOut])
 def get_all_arskurs(
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user
     database: Session = Depends(get_db)
@@ -1015,13 +1021,15 @@ def get_all_arskurs(
     """
     Retrieve all Årskurs from the database.
     """
-    arskurs_list = database.query(Arskurs).all()
+    arskurs_list = database.query(Arskurs).options(joinedload(Arskurs.skola)).all()
+    
     if not arskurs_list:
         raise HTTPException(status_code=404, detail="No Årskurs found")
+    
     return arskurs_list
 
 
-@app.patch("/arskurs/{arskurs_id}", response_model=ArskursSchema)
+@app.patch("/arskurs/{arskurs_id}", response_model=ArskursOut)
 def update_arskurs(
     arskurs_id: int,
     arskurs: ArskursCreate,
@@ -1038,15 +1046,14 @@ def update_arskurs(
     # Update fields
     db_arskurs.name = arskurs.name
     db_arskurs.description = arskurs.description
-    db_arskurs.skola = arskurs.skola
+    db_arskurs.skola_id = arskurs.skola_id if arskurs.skola_id is not None else db_arskurs.skola_id
     db_arskurs.klass = arskurs.klass
 
     database.commit()
     database.refresh(db_arskurs)
     return db_arskurs
 
-
-@app.delete("/arskurs/{arskurs_id}", response_model=ArskursSchema)
+@app.delete("/arskurs/{arskurs_id}", response_model=ArskursOut)
 def delete_arskurs(
     arskurs_id: int,
     current_user: User = Depends(get_current_user),  # Validate token and authenticate user

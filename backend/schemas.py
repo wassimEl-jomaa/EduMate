@@ -21,24 +21,38 @@ class UserIn(BaseModel):
     email: str
     password: str
     phone_number: str
-    
-class Arskurs(BaseModel):
-    name: str
-    description: str
-    skola: str
-    klass: str
-
-class ArskursOut(Arskurs):
+class SchoolBase(BaseModel):
     id: int
-    name: str
-    description: str
-    skola: str
-    klass: str
+    name: str  # Assuming `School` has a `name` field, adjust as necessary.
 
     class Config:
-     
-        from_attributes = True  # Allows Pydantic to read data from SQLAlchemy models
+       from_attributes = True 
+class SchoolCreate(BaseModel):
+    name: str
+    description: str
+    address: str
+    phone_number: str
+    email: str
+   
+# Base schema for creating or updating an Arskurs
+class ArskursBase(BaseModel):
+    name: str
+    description: str
+    skola_id: Optional[int]  # skola_id is optional, can be None
+    klass: str
 
+# Schema for creating Arskurs (can use ArskursBase directly)
+class ArskursCreate(BaseModel):
+    name: str
+    description: str
+    skola_id: Optional[int]  # skola_id is optional, can be None
+    klass: str
+
+# Schema for reading Arskurs data, including the id field
+class ArskursOut(ArskursBase):
+    id: int  # Include the id for the output model
+    class Config:
+        from_attributes = True 
 class Role(BaseModel):
     name: str
 
@@ -282,22 +296,6 @@ class FiluppladdningCreate(BaseModel):
     filepath: str
     description: Optional[str]
     homework_id: int
-
-class ArskursBase(BaseModel):
-    name: str
-    description: str
-    skola: str
-    klass: str
-
-class ArskursCreate(ArskursBase):
-    pass
-
-class Arskurs(ArskursBase):
-    id: int
-
-    class Config:
-       from_attributes = True
-
 class SubjectCreate(BaseModel):
     name: str
 

@@ -3,9 +3,15 @@ from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Date, Tabl
 from sqlalchemy.orm import relationship
 from db_setup import Base
 
-
+# Junction table to link User and Parent
+user_parent_association = Table(
+    'user_parent_association', Base.metadata,
+    Column('user_id', Integer, ForeignKey('user.id', ondelete="CASCADE"), primary_key=True),
+    Column('parent_id', Integer, ForeignKey('parent.id', ondelete="CASCADE"), primary_key=True)
+)   
 class User(Base):
     __tablename__ = "user"
+
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String)
     first_name = Column(String)
@@ -16,17 +22,29 @@ class User(Base):
     arskurs_id = Column(Integer, ForeignKey('arskurs.id'), nullable=True)
     role_id = Column(Integer, ForeignKey('role.id'), nullable=True)
     membership_id = Column(Integer, ForeignKey('membership.id'), nullable=True)
-    membership = relationship("Membership")
-    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)  # Foreign key to School table
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    parent_id = Column(Integer, ForeignKey("parent.id"), nullable=True)  # Foreign key to Parent table
 
     # Relationships
-    school = relationship("School", back_populates="users")  # Many-to-one relationship
+    student = relationship("Student", back_populates="user", uselist=False)
+    school = relationship("School", back_populates="users")
     role = relationship("Role")
     arskurs = relationship("Arskurs")
     tokens = relationship("Token", back_populates="user", cascade="all, delete-orphan")
-    teacher = relationship("Teacher", back_populates="user", uselist=False)  # One-to-one relationship with Teacher
+    teacher = relationship("Teacher", back_populates="user", uselist=False)
     betyg = relationship("Betyg", back_populates="user")
-    meddelanden = relationship("Meddelande", back_populates="user")  # Relationship to Meddelande
+    meddelanden = relationship("Meddelande", back_populates="user")
+    
+    # Many-to-many relationship with Parent using the junction table
+    parents = relationship(
+        'Parent', 
+        secondary=user_parent_association, 
+        back_populates='users'
+    )
+
+    def __repr__(self):
+        return f"<User(id={self.id}, username={self.username}, email={self.email})>"
+ 
 class Token(Base):
     __tablename__ = "token"
 
@@ -56,8 +74,8 @@ class Teacher(Base):
     user = relationship("User", back_populates="teacher")  
     subject = relationship("Subject", backref="teachers")  # Optional: Subject table if you want to associate teachers with subjects
    
-     # Many-to-many relationship with Teacher
-    teachers = relationship("Teacher", secondary=arskurs_teacher_association, back_populates="arskurser")
+      # Many-to-many relationship with Arskurs
+    arskurser = relationship("Arskurs", secondary=arskurs_teacher_association, back_populates="teachers")
     def __repr__(self):
         return f"<Teacher(id={self.id}, user_id={self.user_id}, qualifications={self.qualifications})>"
 
@@ -73,7 +91,61 @@ class School(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationship to User
+    arskurser = relationship("Arskurs", back_populates="skola")
     users = relationship("User", back_populates="school")  # One-to-many relationship
+class Student(Base):
+    __tablename__ = "student"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)  # Foreign key to User table
+    arskurs_id = Column(Integer, ForeignKey("arskurs.id", ondelete="SET NULL"), nullable=True)  # Foreign key to Arskurs table
+    enrollment_date = Column(Date, nullable=False)  # Date of enrollment
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    user = relationship("User", back_populates="student")  # One-to-one relationship with User
+    arskurs = relationship("Arskurs", back_populates="students")  # Many-to-one relationship with Arskurs
+
+    # Many-to-many relationship with Parent
+    parents = relationship(
+        "Parent",
+        secondary="parent_student_association",
+        back_populates="children"
+    )
+
+    def __repr__(self):
+        return f"<Student(id={self.id}, user_id={self.user_id}, arskurs_id={self.arskurs_id})>"
+
+class Parent(Base):
+    __tablename__ = "parent"
+
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String(15), nullable=True)  # Parent's phone number
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    users = relationship(
+        'User', 
+        secondary=user_parent_association, 
+        back_populates='parents'
+    )
+
+    children = relationship(
+        "Student", 
+        secondary="parent_student_association", 
+        back_populates="parents"
+    )  # Many-to-many relationship with Student
+
+    def __repr__(self):
+        return f"<Parent(id={self.id}, phone_number={self.phone_number})>"
+parent_student_association = Table(
+    "parent_student_association",
+    Base.metadata,
+    Column("parent_id", Integer, ForeignKey("parent.id", ondelete="CASCADE"), primary_key=True),
+    Column("student_id", Integer, ForeignKey("student.id", ondelete="CASCADE"), primary_key=True)
+)     
 class Role(Base):
     __tablename__ = "role"
     
@@ -89,19 +161,29 @@ class Membership(Base):
     end_date = Column(Date, nullable=False)  # End date of the membership
     
 
+
 class Arskurs(Base):
     __tablename__ = "arskurs"
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    skola = Column(String)  # Add skola field
-    klass = Column(String)  # Add klass field
+    skola_id = Column(Integer, ForeignKey("schools.id"), nullable=True)  # Foreign key to School table
+    klass = Column(String, nullable=True)
+    # Define the relationship to the School model
+    skola = relationship("School", back_populates="arskurser")
     # Many-to-many relationship with Teacher
     teachers = relationship("Teacher", secondary=arskurs_teacher_association, back_populates="arskurser")
+
+    # One-to-many relationship with Student
+    students = relationship("Student", back_populates="arskurs")  # Add this relationship
+
     __table_args__ = (
-        UniqueConstraint("name", "skola", "klass", name="unique_name_skola_klass"),
+        UniqueConstraint("name", "skola_id", "klass", name="unique_name_skola_klass"),
     )
 
+    def __repr__(self):
+        return f"<Arskurs(id={self.id}, name={self.name}, skola_id={self.skola_id}, klass={self.klass})>"
 class Homework(Base):
     __tablename__ = "homework"
 
