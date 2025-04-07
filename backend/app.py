@@ -18,8 +18,8 @@ import uvicorn
 from schemas import RoleBase as RoleSchema
 from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
 from models import  User
-from models import Role ,School, Teacher, Student, Parent,Class_Level,Token
-from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase,ClassLevelCreate,ClassLevelUpdate
+from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject
+from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase,ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -522,6 +522,66 @@ def delete_class_level(
     database.commit()
 
     return class_level
-    return school    
+    return school   
+
+
+@app.get("/subjects", response_model=List[SubjectBase])
+def read_all_subjects(current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
+    """
+    Get all subjects from the database.
+    """
+    subjects = database.query(Subject).all()
+    return subjects   
+@app.post("/subjects", response_model=SubjectBase)
+def add_subject(subject_data: SubjectCreate, current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
+    """
+    Add a new subject to the database.
+    """
+    # Check if the subject already exists
+    existing_subject = database.query(Subject).filter(Subject.name == subject_data.name).first()
+    if existing_subject:
+        raise HTTPException(status_code=400, detail="Subject already exists")
+
+    # Create the new subject
+    new_subject = Subject(name=subject_data.name)
+    database.add(new_subject)
+    database.commit()
+    database.refresh(new_subject)
+
+    return new_subject    
+@app.put("/subjects/{subject_id}", response_model=SubjectBase)
+def update_subject(subject_id: int, subject_update: SubjectUpdate, current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
+    """
+    Update the subject by ID.
+    """
+    # Check if the subject exists
+    subject = database.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    # Update the subject's name
+    subject.name = subject_update.name
+
+    # Commit the changes to the database
+    database.commit()
+    database.refresh(subject)
+
+    return subject
+@app.delete("/subjects/{subject_id}")
+def delete_subject(subject_id: int, current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
+    """
+    Delete a subject by ID from the database.
+    """
+    # Check if the subject exists
+    subject = database.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    # Delete the subject
+    database.delete(subject)
+    database.commit()
+
+    return {"message": f"Subject with ID {subject_id} has been deleted successfully"}
+    return subject     
 if __name__ == '__main__':
     uvicorn.run(app)

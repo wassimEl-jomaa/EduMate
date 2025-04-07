@@ -109,4 +109,17 @@ class ClassLevelCreate(BaseModel):
 
 class ClassLevelUpdate(BaseModel):
     name: Optional[str] = None
-    school_id: Optional[int] = None     
+    school_id: Optional[int] = None  
+
+class SubjectBase(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
+class SubjectCreate(BaseModel):
+    name: str
+
+class SubjectUpdate(BaseModel):
+    name: str      
