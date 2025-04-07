@@ -19,7 +19,9 @@ from schemas import RoleBase as RoleSchema
 from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
 from models import  User
 from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject
-from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase,ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
+from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase
+from schemas import ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
+from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -526,12 +528,22 @@ def delete_class_level(
 
 
 @app.get("/subjects", response_model=List[SubjectBase])
-def read_all_subjects(current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
+def read_all_subjects(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
     """
     Get all subjects from the database.
     """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch all subjects from the database
     subjects = database.query(Subject).all()
-    return subjects   
+
+    # Return the list of subjects
+    return subjects
 @app.post("/subjects", response_model=SubjectBase)
 def add_subject(subject_data: SubjectCreate, current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
     """
@@ -582,6 +594,102 @@ def delete_subject(subject_id: int, current_user: User = Depends(get_current_use
     database.commit()
 
     return {"message": f"Subject with ID {subject_id} has been deleted successfully"}
-    return subject     
+    return subject  
+
+# Create a new student
+@app.post("/students", response_model=StudentBase)
+def create_student(student: StudentCreate, current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
+    """
+    Create a new student.
+    """
+    new_student = Student(
+        date_of_birth=student.date_of_birth,
+        user_id=student.user_id,
+        class_level_id=student.class_level_id
+    )
+    database.add(new_student)
+    database.commit()
+    database.refresh(new_student)
+    return new_student
+
+
+# Read all students
+# Get all students with token validation and user authentication
+@app.get("/students", response_model=List[StudentBase])
+def get_all_students(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Get all students from the database.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch all students from the database
+    students = database.query(Student).all()
+
+    # Return the list of students
+    return students
+
+# Get student by ID with token validation and user authentication
+@app.get("/students/{student_id}", response_model=StudentBase)
+def get_student(student_id: int, 
+                current_user: User = Depends(get_current_user),  # Token validation and user authentication
+                database: Session = Depends(get_db)):
+    """
+    Get a student by ID.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch the student from the database
+    student = database.query(Student).filter(Student.id == student_id).first()
+    
+    # If the student is not found, raise an error
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Return the student details
+    return student
+
+
+# Update a student
+@app.put("/students/{student_id}", response_model=StudentBase)
+def update_student(student_id: int, student_update: StudentUpdate, current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
+    """
+    Update a student's information.
+    """
+    student = database.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    if student_update.date_of_birth:
+        student.date_of_birth = student_update.date_of_birth
+    if student_update.user_id:
+        student.user_id = student_update.user_id
+    if student_update.class_level_id is not None:
+        student.class_level_id = student_update.class_level_id
+
+    database.commit()
+    database.refresh(student)
+    return student
+
+
+# Delete a student
+@app.delete("/students/{student_id}")
+def delete_student(student_id: int, current_user: User = Depends(get_current_user), database: Session = Depends(get_db)):
+    """
+    Delete a student by ID.
+    """
+    student = database.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    database.delete(student)
+    database.commit()
+    return {"message": f"Student with ID {student_id} has been deleted successfully."}       
 if __name__ == '__main__':
     uvicorn.run(app)

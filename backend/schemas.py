@@ -122,4 +122,28 @@ class SubjectCreate(BaseModel):
     name: str
 
 class SubjectUpdate(BaseModel):
-    name: str      
+    name: str   
+class StudentBase(BaseModel):
+    date_of_birth: date
+    user_id: int
+    class_level_id: Optional[int] = None  # This can be None initially
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True 
+
+class StudentCreate(StudentBase):
+    pass
+
+class StudentUpdate(BaseModel):
+    date_of_birth: Optional[date] = None
+    user_id: Optional[int] = None
+    class_level_id: Optional[int] = None  
+
+class StudentOut(StudentBase):
+    id: int
+    class_level_id: Optional[int] = None   
+    user_id: Optional[UserOut] = None  # Nested UserOut model    
+    class Config:
+        from_attributes = True 
