@@ -3,12 +3,7 @@ from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Date, Tabl
 from sqlalchemy.orm import relationship
 from db_setup import Base
 
-# Junction table to link User and Parent
-user_parent_association = Table(
-    'user_parent_association', Base.metadata,
-    Column('user_id', Integer, ForeignKey('user.id', ondelete="CASCADE"), primary_key=True),
-    Column('parent_id', Integer, ForeignKey('parent.id', ondelete="CASCADE"), primary_key=True)
-)   
+ 
 class User(Base):
     __tablename__ = "user"
 
@@ -19,31 +14,19 @@ class User(Base):
     email = Column(String)
     password = Column(String)
     phone_number = Column(String)
-    arskurs_id = Column(Integer, ForeignKey('arskurs.id'), nullable=True)
     role_id = Column(Integer, ForeignKey('role.id'), nullable=True)
-    membership_id = Column(Integer, ForeignKey('membership.id'), nullable=True)
-    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
-    parent_id = Column(Integer, ForeignKey("parent.id"), nullable=True)  # Foreign key to Parent table
-
+    address = Column(Text, nullable=True)
+    postal_code = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    country = Column(String, nullable=True)
+    
     # Relationships
     student = relationship("Student", back_populates="user", uselist=False)
-    school = relationship("School", back_populates="users")
     role = relationship("Role")
-    arskurs = relationship("Arskurs")
-    tokens = relationship("Token", back_populates="user", cascade="all, delete-orphan")
+    token = relationship("Token", back_populates="user", cascade="all, delete-orphan")
     teacher = relationship("Teacher", back_populates="user", uselist=False)
-    betyg = relationship("Betyg", back_populates="user")
-    meddelanden = relationship("Meddelande", back_populates="user")
-    
-    # Many-to-many relationship with Parent using the junction table
-    parents = relationship(
-        'Parent', 
-        secondary=user_parent_association, 
-        back_populates='users'
-    )
+    parent = relationship("Parent", back_populates="user")
 
-    def __repr__(self):
-        return f"<User(id={self.id}, username={self.username}, email={self.email})>"
  
 class Token(Base):
     __tablename__ = "token"
@@ -53,35 +36,63 @@ class Token(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False)
 
     # Add the relationship to the User model
-    user = relationship("User", back_populates="tokens")
-# Association table for many-to-many relationship between Arskurs and Teacher
-arskurs_teacher_association = Table(
-    "arskurs_teacher",
-    Base.metadata,
-    Column("arskurs_id", Integer, ForeignKey("arskurs.id", ondelete="CASCADE"), primary_key=True),
-    Column("teacher_id", Integer, ForeignKey("teacher.id", ondelete="CASCADE"), primary_key=True)
-)
+    user = relationship("User", back_populates="token")
+
+
+class Subject_Class_Level(Base):
+    __tablename__ = "subject_class_level"
+
+    id = Column(Integer, primary_key=True, index=True)
+    class_level_id = Column(Integer, ForeignKey("class_level.id", ondelete="CASCADE"))
+    subject_id = Column(Integer, ForeignKey("subject.id", ondelete="CASCADE"))
+    teacher_id = Column(Integer, ForeignKey("teacher.id", ondelete="CASCADE"))
+    
+    class_level = relationship('Class_Level', backref='subject_class_level')
+    subject = relationship('Subject', backref='subject_class_level')
+    teacher = relationship('Teacher', back_populates='subject_class_level')
+    homework = relationship("Homework", back_populates="subject_class_level")  # Use back_populates
+ 
+class Student_Homework(Base):
+    __tablename__ = "student_homework"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("student.id", ondelete="CASCADE"))
+    homework_id = Column(Integer, ForeignKey("homework.id", ondelete="CASCADE"))
+    file_attachement_id = Column(Integer, ForeignKey("file_attachment.id", ondelete="CASCADE"))
+
+    student = relationship("Student", back_populates="student_homework")
+    homework = relationship("Homework", back_populates="student_homework")
+    file_attachment = relationship("File_Attachment", back_populates="student_homework")  # Use back_populates
+    grade = relationship("Grade", back_populates="student_homework")  # Use back_populates
+
+class Guardian(Base):
+    __tablename__ = "guardian"
+
+    id = Column(Integer, primary_key=True, index=True)
+    parent_id = Column(Integer, ForeignKey("parent.id", ondelete="CASCADE"))
+    student_id = Column(Integer, ForeignKey("student.id", ondelete="CASCADE"))
+
+    parent = relationship("Parent", back_populates="guardian")
+    student = relationship("Student", back_populates="guardian")
+
+
 class Teacher(Base):
     __tablename__ = "teacher"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)  # ForeignKey to User table
     subject_id = Column(Integer, ForeignKey("subject.id"), nullable=True)  # Optional: Subject the teacher teaches
-  
     qualifications = Column(Text, nullable=True)  # Teacher's qualifications
     photo = Column(String, nullable=True)
-    homeworks = relationship("Homework", back_populates="teacher")  # Use back_populates
+    employment_date = Column(Date, nullable=False)  # Date of employment
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     user = relationship("User", back_populates="teacher")  
-    subject = relationship("Subject", backref="teachers")  # Optional: Subject table if you want to associate teachers with subjects
-   
-      # Many-to-many relationship with Arskurs
-    arskurser = relationship("Arskurs", secondary=arskurs_teacher_association, back_populates="teachers")
-    def __repr__(self):
-        return f"<Teacher(id={self.id}, user_id={self.user_id}, qualifications={self.qualifications})>"
+    subject = relationship("Subject", backref="teacher")  # Optional: Subject table if you want to associate teachers with subjects
 
+    subject_class_level = relationship("Subject_Class_Level", back_populates="teacher")  # Many-to-one relationship with Arskurs
     
 class School(Base):
-    __tablename__ = "schools"
+    __tablename__ = "school"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
@@ -89,101 +100,67 @@ class School(Base):
     phone_number = Column(String(15), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    
-    # Relationship to User
-    arskurser = relationship("Arskurs", back_populates="skola")
-    users = relationship("User", back_populates="school")  # One-to-many relationship
+
+    # Relationships
+    class_level = relationship("Class_Level", back_populates="school")
+
 class Student(Base):
     __tablename__ = "student"
 
     id = Column(Integer, primary_key=True, index=True)
+    date_of_birth = Column(Date, nullable=False)  # Student's date of birth
     user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)  # Foreign key to User table
-    arskurs_id = Column(Integer, ForeignKey("arskurs.id", ondelete="SET NULL"), nullable=True)  # Foreign key to Arskurs table
-    enrollment_date = Column(Date, nullable=False)  # Date of enrollment
+    class_level_id = Column(Integer, ForeignKey("class_level.id", ondelete="SET NULL"), nullable=True)  # Foreign key to Arskurs table
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = relationship("User", back_populates="student")  # One-to-one relationship with User
-    arskurs = relationship("Arskurs", back_populates="students")  # Many-to-one relationship with Arskurs
-
-    # Many-to-many relationship with Parent
-    parents = relationship(
-        "Parent",
-        secondary="parent_student_association",
-        back_populates="children"
-    )
-
-    def __repr__(self):
-        return f"<Student(id={self.id}, user_id={self.user_id}, arskurs_id={self.arskurs_id})>"
+    class_level = relationship("Class_Level", back_populates="student")  # Many-to-one relationship with Arskurs
+    homework = relationship("Homework", secondary="student_homework", back_populates="student")  # Many-to-one relationship with Arskurs
+    student_homework = relationship("Student_Homework", back_populates="student")  # Many-to-one relationship with Arskurs
+    guardian = relationship("Guardian", back_populates="student")  # Many-to-one relationship with Guardian
 
 class Parent(Base):
     __tablename__ = "parent"
 
     id = Column(Integer, primary_key=True, index=True)
-    phone_number = Column(String(15), nullable=True)  # Parent's phone number
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)  # Foreign key to User table
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    users = relationship(
-        'User', 
-        secondary=user_parent_association, 
-        back_populates='parents'
-    )
+    user = relationship("User", back_populates="parent")  # One-to-one relationship with User
+    guardian = relationship("Guardian", back_populates="parent")  # Many-to-one relationship with Guardian
 
-    children = relationship(
-        "Student", 
-        secondary="parent_student_association", 
-        back_populates="parents"
-    )  # Many-to-many relationship with Student
-
-    def __repr__(self):
-        return f"<Parent(id={self.id}, phone_number={self.phone_number})>"
-parent_student_association = Table(
-    "parent_student_association",
-    Base.metadata,
-    Column("parent_id", Integer, ForeignKey("parent.id", ondelete="CASCADE"), primary_key=True),
-    Column("student_id", Integer, ForeignKey("student.id", ondelete="CASCADE"), primary_key=True)
-)     
+    
 class Role(Base):
     __tablename__ = "role"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)    
+    name = Column(String, unique=True, index=True)   
+   
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-class Membership(Base):
-    __tablename__ = "membership"
-
-    id = Column(Integer, primary_key=True, index=True)
-    membership_type = Column(String, nullable=False)  # Type of membership (e.g., 'Premium', 'Basic')
-    start_date = Column(Date, nullable=False)  # Start date of the membership
-    end_date = Column(Date, nullable=False)  # End date of the membership
-    
+    user = relationship("User", back_populates="role")  # One-to-one relationship with User
 
 
-class Arskurs(Base):
-    __tablename__ = "arskurs"
+class Class_Level(Base):
+    __tablename__ = "class_level"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    skola_id = Column(Integer, ForeignKey("schools.id"), nullable=True)  # Foreign key to School table
-    klass = Column(String, nullable=True)
+    school_id = Column(Integer, ForeignKey("school.id"), nullable=True)  # Foreign key to School table
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
     # Define the relationship to the School model
-    skola = relationship("School", back_populates="arskurser")
-    # Many-to-many relationship with Teacher
-    teachers = relationship("Teacher", secondary=arskurs_teacher_association, back_populates="arskurser")
+    school = relationship("School", back_populates="class_level")
+    subject = relationship("Subject", secondary="subject_class_level", back_populates="class_level")  # Many-to-one relationship with Arskurs
+    student = relationship("Student", back_populates="class_level")  # Add this relationship
 
-    # One-to-many relationship with Student
-    students = relationship("Student", back_populates="arskurs")  # Add this relationship
 
-    __table_args__ = (
-        UniqueConstraint("name", "skola_id", "klass", name="unique_name_skola_klass"),
-    )
-
-    def __repr__(self):
-        return f"<Arskurs(id={self.id}, name={self.name}, skola_id={self.skola_id}, klass={self.klass})>"
 class Homework(Base):
     __tablename__ = "homework"
 
@@ -193,74 +170,71 @@ class Homework(Base):
     due_date = Column(Date)
     status = Column(String, default="Pending")
     priority = Column(String, default="Normal")
+    subject_class_level_id = Column(Integer, ForeignKey("subject_class_level.id"))  # Foreign key referencing the Subject table
+    file_attachment_id = Column(Integer, ForeignKey("file_attachment.id"))  # Foreign key referencing the Subject table
 
     # Direct reference to Teacher table
-    teacher_id = Column(Integer, ForeignKey("teacher.id"), nullable=True)
-    teacher = relationship("Teacher", back_populates="homeworks")  # Use back_populates
+    subject_class_level = relationship("Subject_Class_Level", back_populates="homework")  # Use back_populates
+    student = relationship("Student", secondary="student_homework", back_populates="homework")  # Use back_populates
 
-    user_id = Column(Integer, ForeignKey("user.id"))
-    user = relationship("User")
+    file_attachment = relationship("File_Attachment", back_populates="homework", uselist=False)
+    student_homework = relationship("Student_Homework", back_populates="homework")  # Use back_populates
 
-    subject_id = Column(Integer, ForeignKey("subject.id"))  # Foreign key referencing the Subject table
-    subject = relationship("Subject")
-    betyg = relationship("Betyg", back_populates="homework", uselist=False)
-    meddelande = relationship("Meddelande", back_populates="homework", uselist=False)
-    filuppladdning = relationship("Filuppladdning", back_populates="homework", uselist=False)
-    recommended_resource = relationship("RecommendedResource", back_populates="homework", uselist=False)
-
-    def __repr__(self):
-        return f"<Homework(id={self.id}, title={self.title}, due_date={self.due_date}, status={self.status})>"
 class Subject(Base):
     __tablename__ = "subject"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
-   
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-class Betyg(Base):
-    __tablename__ = "betyg"
+    # Direct reference to Teacher table
+    class_level = relationship("Class_Level", secondary="subject_class_level", back_populates="subject")  # Use back_populates
+    recommended_resource = relationship("Recommended_Resource", back_populates="subject")  # Use back_populates
+   
+ 
+class Grade(Base):
+    __tablename__ = "grade"
 
     id = Column(Integer, primary_key=True, index=True)
     grade = Column(String, nullable=False)
-    comments = Column(Text, nullable=True)
+    description = Column(Text, nullable=True)
     feedback = Column(Text, nullable=True)  # New column for feedback
     created_at = Column(DateTime,  default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    homework_id = Column(Integer, ForeignKey("homework.id"))
-    homework = relationship("Homework")    
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
-    user = relationship("User", back_populates="betyg")
+    student_homework_id = Column(Integer, ForeignKey("student_homework.id"))
+    student_homework = relationship("Student_Homework" , back_populates="grade")    
 
-class Filuppladdning(Base):
-    __tablename__ = "filuppladdning"
+class File_Attachment(Base):
+    __tablename__ = "file_attachment"
 
     id = Column(Integer, primary_key=True, index=True)
-    filename = Column(String, nullable=False)
-    filepath = Column(String, nullable=False)
+    file_name = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
     description = Column(Text, nullable=True)  # New column for description
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    homework_id = Column(Integer, ForeignKey("homework.id"))
-    homework = relationship("Homework")
+    homework = relationship("Homework", back_populates="file_attachment")  # Use back_populates
+    student_homework = relationship("Student_Homework", back_populates="file_attachment")  # Use back_populates
 
-class Meddelande(Base):
-    __tablename__ = "meddelande"
+class Message(Base):
+    __tablename__ = "message"
 
     id = Column(Integer, primary_key=True, index=True)
     message = Column(Text, nullable=False)
-    description = Column(Text, nullable=True)  # New column for description
     read_status = Column(String, default="Unread")  # New column for read_status
-    type = Column( nullable=False, default="general")  # New ENUM column
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    homework_id = Column(Integer, ForeignKey("homework.id"))
-    homework = relationship("Homework")
 
     # Add user_id as a foreign key
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
-    user = relationship("User", back_populates="meddelanden")  # Relationship to the User model
+    recipient_user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    sender_user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    
+    # Define separate relationships for recipient and sender
+    recipient_user = relationship("User", foreign_keys=[recipient_user_id], backref="received_messages")
+    sender_user = relationship("User", foreign_keys=[sender_user_id], backref="sent_messages")
 
-class RecommendedResource(Base):
+class Recommended_Resource(Base):
     __tablename__ = "recommended_resource"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -269,7 +243,7 @@ class RecommendedResource(Base):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    homework_id = Column(Integer, ForeignKey("homework.id"))
-    homework = relationship("Homework")
+    subject_id = Column(Integer, ForeignKey("subject.id"))
+    subject = relationship("Subject" , back_populates="recommended_resource")  # Use back_populates
 
 
