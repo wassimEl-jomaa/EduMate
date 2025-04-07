@@ -18,11 +18,12 @@ import uvicorn
 from schemas import RoleBase as RoleSchema
 from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
 from models import  User
-from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject
+from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject,Guardian
 from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase
 from schemas import ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
 from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut,TeacherUpdate,TeacherCreate,TeacherBase
 from schemas import ParentBase,ParentCreate,ParentUpdate,ParentOut
+from schemas import GuardianCreate,GuardianUpdate,GuardianOut
 # Initialize the FastAPI app
 app = FastAPI()
 security = HTTPBearer()
@@ -918,6 +919,112 @@ def delete_parent(
     database.commit()
 
     return {"message": f"Parent with ID {parent_id} has been deleted successfully"}       
+@app.get("/guardians", response_model=List[GuardianOut])
+def get_all_guardians(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Get all guardians from the database.
+    """
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        
+        guardians = database.query(Guardian).options(joinedload(Guardian.parent), joinedload(Guardian.student)).all()
+        return guardians
+    except HTTPException as e:
+        # Log the error or add additional handling here
+        raise e
+    except Exception as e:
+        # Handle unexpected exceptions
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+@app.post("/guardians", response_model=GuardianOut)
+def add_guardian(
+    guardian_data: GuardianCreate,  # Guardian data from the request body
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Add a new guardian to the database.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Ensure the parent and student exist before adding the guardian
+    parent = database.query(Parent).filter(Parent.id == guardian_data.parent_id).first()
+    student = database.query(Student).filter(Student.id == guardian_data.student_id).first()
+    
+    if not parent or not student:
+        raise HTTPException(status_code=404, detail="Parent or Student not found")
+    
+    # Create the new guardian
+    new_guardian = Guardian(
+        parent_id=guardian_data.parent_id,
+        student_id=guardian_data.student_id
+    )
+    
+    # Add the guardian to the database
+    database.add(new_guardian)
+    database.commit()
+    database.refresh(new_guardian)
 
+    # Return the newly created guardian
+    return new_guardian
+@app.put("/guardians/{guardian_id}", response_model=GuardianOut)
+def update_guardian(
+    guardian_id: int,
+    guardian_data: GuardianUpdate,  # Data to update the guardian
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Update a guardian by ID.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Find the guardian by ID
+    guardian = database.query(Guardian).filter(Guardian.id == guardian_id).first()
+    
+    if not guardian:
+        raise HTTPException(status_code=404, detail="Guardian not found")
+    
+    # Update the guardian’s attributes
+    if guardian_data.parent_id:
+        guardian.parent_id = guardian_data.parent_id
+    if guardian_data.student_id:
+        guardian.student_id = guardian_data.student_id
+    
+    # Commit the changes to the database
+    database.commit()
+    database.refresh(guardian)
+
+    # Return the updated guardian
+    return guardian
+@app.delete("/guardians/{guardian_id}")
+def delete_guardian(
+    guardian_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Delete a guardian by ID.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Find the guardian by ID
+    guardian = database.query(Guardian).filter(Guardian.id == guardian_id).first()
+    
+    if not guardian:
+        raise HTTPException(status_code=404, detail="Guardian not found")
+    
+    # Delete the guardian from the database
+    database.delete(guardian)
+    database.commit()
+
+    # Return a message confirming the deletion
+    return {"message": f"Guardian with ID {guardian_id} has been deleted successfully"}            
 if __name__ == '__main__':
     uvicorn.run(app)

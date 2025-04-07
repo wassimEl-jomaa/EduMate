@@ -188,3 +188,20 @@ class ParentCreate(ParentBase):
 
 class ParentUpdate(BaseModel):
     user_id: Optional[int] = None  # Optional field to update user_id    
+
+
+class GuardianCreate(BaseModel):
+    parent_id: int
+    student_id: int
+
+class GuardianUpdate(BaseModel):
+    parent_id: Optional[int] = None
+    student_id: Optional[int] = None
+
+class GuardianOut(BaseModel):
+    id: int
+    parent_id: int
+    student_id: int
+    user: Optional["UserOut"] = None  # Assuming you have a UserOut model to represent the user
+    class Config:
+        from_attributes = True 
