@@ -169,7 +169,7 @@ class ParentBase(BaseModel):
     user_id: int
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    OuserOut: Optional[UserOut] = None  # Nested UserOut model
+    
     class Config:
         from_attributes = True 
 class ParentOut(BaseModel):
@@ -205,3 +205,45 @@ class GuardianOut(BaseModel):
     user: Optional["UserOut"] = None  # Assuming you have a UserOut model to represent the user
     class Config:
         from_attributes = True 
+class HomeworkCreate(BaseModel):
+    title: str
+    description: str
+    due_date: date
+    priority: Optional[str] = "Normal"
+    status: Optional[str] = "Pending"
+    subject_class_level_id: int        
+
+class HomeworkUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    due_date: Optional[date] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+class HomeworkOut(BaseModel):
+    id: int
+    title: str
+    description: str
+    due_date: date
+    priority: str
+    status: str
+    subject_class_level_id: int
+
+    class Config:
+        from_attributes = True    
+
+class SubjectClassLevelBase(BaseModel):
+    id: int
+    class_level_id: int
+    subject_id: int
+    teacher_id: int
+
+    class Config:
+        from_attributes = True   
+class SubjectClassLevelCreate(BaseModel):
+    class_level_id: int
+    subject_id: int
+    teacher_id: int        
+class SubjectClassLevelUpdate(BaseModel):
+    class_level_id: Optional[int] = None
+    subject_id: Optional[int] = None
+    teacher_id: Optional[int] = None    

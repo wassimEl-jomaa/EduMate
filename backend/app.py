@@ -17,13 +17,16 @@ import crud
 import uvicorn
 from schemas import RoleBase as RoleSchema
 from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
-from models import  User
+from models import  User,Homework,Subject_Class_Level
 from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject,Guardian
 from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase
 from schemas import ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
 from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut,TeacherUpdate,TeacherCreate,TeacherBase
 from schemas import ParentBase,ParentCreate,ParentUpdate,ParentOut
-from schemas import GuardianCreate,GuardianUpdate,GuardianOut
+from schemas import GuardianCreate,GuardianUpdate,GuardianOut,HomeworkCreate,HomeworkUpdate,HomeworkOut,HomeworkCreate
+from schemas import SubjectClassLevelBase,SubjectClassLevelCreate,SubjectClassLevelUpdate
+
+
 # Initialize the FastAPI app
 app = FastAPI()
 security = HTTPBearer()
@@ -1025,6 +1028,204 @@ def delete_guardian(
     database.commit()
 
     # Return a message confirming the deletion
-    return {"message": f"Guardian with ID {guardian_id} has been deleted successfully"}            
+    return {"message": f"Guardian with ID {guardian_id} has been deleted successfully"} 
+# Create Homework
+@app.post("/homework/", response_model=HomeworkOut)
+def add_homework(
+    homework_data: HomeworkCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new homework to the database.
+    """
+    # Ensure the subject_class_level exists
+    subject_class_level = db.query(Subject_Class_Level).filter(Subject_Class_Level.id == homework_data.subject_class_level_id).first()
+    if not subject_class_level:
+        raise HTTPException(status_code=404, detail="Subject class level not found")
+
+    # Create the new homework
+    new_homework = Homework(
+        title=homework_data.title,
+        description=homework_data.description,
+        due_date=homework_data.due_date,
+        priority=homework_data.priority,
+        status=homework_data.status,
+        subject_class_level_id=homework_data.subject_class_level_id,
+    )
+    db.add(new_homework)
+    db.commit()
+    db.refresh(new_homework)
+
+    return new_homework
+
+# Read Homework
+@app.get("/homework/{homework_id}", response_model=HomeworkOut)
+def get_homework(
+    homework_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve a homework by ID.
+    """
+    homework = db.query(Homework).filter(Homework.id == homework_id).first()
+    if not homework:
+        raise HTTPException(status_code=404, detail="Homework not found")
+
+    return homework
+
+# Update Homework
+@app.put("/homework/{homework_id}", response_model=HomeworkOut)
+def update_homework(
+    homework_id: int,
+    homework_update: HomeworkUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Update a homework by ID.
+    """
+    homework = db.query(Homework).filter(Homework.id == homework_id).first()
+    if not homework:
+        raise HTTPException(status_code=404, detail="Homework not found")
+
+    # Update homework fields
+    if homework_update.title:
+        homework.title = homework_update.title
+    if homework_update.description:
+        homework.description = homework_update.description
+    if homework_update.due_date:
+        homework.due_date = homework_update.due_date
+    if homework_update.priority:
+        homework.priority = homework_update.priority
+    if homework_update.status:
+        homework.status = homework_update.status
+
+    db.commit()
+    db.refresh(homework)
+
+    return homework
+
+# Delete Homework
+@app.delete("/homework/{homework_id}")
+def delete_homework(
+    homework_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a homework by ID.
+    """
+    homework = db.query(Homework).filter(Homework.id == homework_id).first()
+    if not homework:
+        raise HTTPException(status_code=404, detail="Homework not found")
+
+    db.delete(homework)
+    db.commit()
+
+    return {"message": f"Homework with ID {homework_id} has been deleted successfully"}  
+@app.post("/subject_class_levels", response_model=SubjectClassLevelBase)
+def add_subject_class_level(
+    subject_class_level_data: SubjectClassLevelCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new Subject_Class_Level to the database.
+    """
+    # Ensure the user has the necessary permissions (e.g., admin or teacher)
+    if current_user.role.name not in ["Admin", "Teacher"]:
+        raise HTTPException(status_code=403, detail="Not authorized to add subject class levels")
+
+    # Ensure the class level, subject, and teacher exist
+    class_level = db.query(Class_Level).filter(Class_Level.id == subject_class_level_data.class_level_id).first()
+    subject = db.query(Subject).filter(Subject.id == subject_class_level_data.subject_id).first()
+    teacher = db.query(Teacher).filter(Teacher.id == subject_class_level_data.teacher_id).first()
+
+    if not class_level or not subject or not teacher:
+        raise HTTPException(status_code=404, detail="Class level, subject, or teacher not found")
+
+    # Create the new Subject_Class_Level
+    new_subject_class_level = Subject_Class_Level(
+        class_level_id=subject_class_level_data.class_level_id,
+        subject_id=subject_class_level_data.subject_id,
+        teacher_id=subject_class_level_data.teacher_id
+    )
+    db.add(new_subject_class_level)
+    db.commit()
+    db.refresh(new_subject_class_level)
+
+    return new_subject_class_level   
+@app.get("/subject_class_levels", response_model=List[SubjectClassLevelBase])
+def get_all_subject_class_levels(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Get all Subject_Class_Level entries from the database.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch all Subject_Class_Level entries
+    subject_class_levels = db.query(Subject_Class_Level).all()
+
+    return subject_class_levels     
+@app.put("/subject_class_levels/{subject_class_level_id}", response_model=SubjectClassLevelBase)
+def update_subject_class_level(
+    subject_class_level_id: int,
+    subject_class_level_update: SubjectClassLevelUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Update a Subject_Class_Level by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., admin or teacher)
+    if current_user.role.name not in ["Admin", "Teacher"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update subject class levels")
+
+    # Fetch the Subject_Class_Level entry
+    subject_class_level = db.query(Subject_Class_Level).filter(Subject_Class_Level.id == subject_class_level_id).first()
+    if not subject_class_level:
+        raise HTTPException(status_code=404, detail="Subject_Class_Level not found")
+
+    # Update the fields
+    if subject_class_level_update.class_level_id:
+        subject_class_level.class_level_id = subject_class_level_update.class_level_id
+    if subject_class_level_update.subject_id:
+        subject_class_level.subject_id = subject_class_level_update.subject_id
+    if subject_class_level_update.teacher_id:
+        subject_class_level.teacher_id = subject_class_level_update.teacher_id
+
+    db.commit()
+    db.refresh(subject_class_level)
+
+    return subject_class_level   
+@app.delete("/subject_class_levels/{subject_class_level_id}")
+def delete_subject_class_level(
+    subject_class_level_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a Subject_Class_Level by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., admin)
+    if current_user.role.name != "Admin":
+        raise HTTPException(status_code=403, detail="Not authorized to delete subject class levels")
+
+    # Fetch the Subject_Class_Level entry
+    subject_class_level = db.query(Subject_Class_Level).filter(Subject_Class_Level.id == subject_class_level_id).first()
+    if not subject_class_level:
+        raise HTTPException(status_code=404, detail="Subject_Class_Level not found")
+
+    # Delete the entry
+    db.delete(subject_class_level)
+    db.commit()
+
+    return {"message": f"Subject_Class_Level with ID {subject_class_level_id} has been deleted successfully"}             
 if __name__ == '__main__':
     uvicorn.run(app)

@@ -39,18 +39,7 @@ class Token(Base):
     user = relationship("User", back_populates="token")
 
 
-class Subject_Class_Level(Base):
-    __tablename__ = "subject_class_level"
 
-    id = Column(Integer, primary_key=True, index=True)
-    class_level_id = Column(Integer, ForeignKey("class_level.id", ondelete="CASCADE"))
-    subject_id = Column(Integer, ForeignKey("subject.id", ondelete="CASCADE"))
-    teacher_id = Column(Integer, ForeignKey("teacher.id", ondelete="CASCADE"))
-    
-    class_level = relationship('Class_Level', backref='subject_class_level')
-    subject = relationship('Subject', backref='subject_class_level')
-    teacher = relationship('Teacher', back_populates='subject_class_level')
-    homework = relationship("Homework", back_populates="subject_class_level")  # Use back_populates
  
 class Student_Homework(Base):
     __tablename__ = "student_homework"
@@ -146,19 +135,7 @@ class Role(Base):
     user = relationship("User", back_populates="role")  # One-to-one relationship with User
 
 
-class Class_Level(Base):
-    __tablename__ = "class_level"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    school_id = Column(Integer, ForeignKey("school.id"), nullable=True)  # Foreign key to School table
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-
-    # Define the relationship to the School model
-    school = relationship("School", back_populates="class_level")
-    subject = relationship("Subject", secondary="subject_class_level", back_populates="class_level")  # Many-to-one relationship with Arskurs
-    student = relationship("Student", back_populates="class_level")  # Add this relationship
 
 
 class Homework(Base):
@@ -191,7 +168,31 @@ class Subject(Base):
     # Direct reference to Teacher table
     class_level = relationship("Class_Level", secondary="subject_class_level", back_populates="subject")  # Use back_populates
     recommended_resource = relationship("Recommended_Resource", back_populates="subject")  # Use back_populates
-   
+class Subject_Class_Level(Base):
+    __tablename__ = "subject_class_level"
+
+    id = Column(Integer, primary_key=True, index=True)
+    class_level_id = Column(Integer, ForeignKey("class_level.id", ondelete="CASCADE"))
+    subject_id = Column(Integer, ForeignKey("subject.id", ondelete="CASCADE"))
+    teacher_id = Column(Integer, ForeignKey("teacher.id", ondelete="CASCADE"))
+    
+    class_level = relationship('Class_Level', backref='subject_class_level')
+    subject = relationship('Subject', backref='subject_class_level')
+    teacher = relationship('Teacher', back_populates='subject_class_level')
+    homework = relationship("Homework", back_populates="subject_class_level")  # Use back_populates    
+class Class_Level(Base):
+    __tablename__ = "class_level"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    school_id = Column(Integer, ForeignKey("school.id"), nullable=True)  # Foreign key to School table
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Define the relationship to the School model
+    school = relationship("School", back_populates="class_level")
+    subject = relationship("Subject", secondary="subject_class_level", back_populates="class_level")  # Many-to-one relationship with Arskurs
+    student = relationship("Student", back_populates="class_level")  # Add this relationship   
  
 class Grade(Base):
     __tablename__ = "grade"
