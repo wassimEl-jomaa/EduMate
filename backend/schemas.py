@@ -144,6 +144,24 @@ class StudentUpdate(BaseModel):
 class StudentOut(StudentBase):
     id: int
     class_level_id: Optional[int] = None   
-    user_id: Optional[UserOut] = None  # Nested UserOut model    
+    user_id: Optional[int] = None  # Nested UserOut model    
     class Config:
         from_attributes = True 
+class TeacherBase(BaseModel):
+    user_id: int
+    subject_id: Optional[int] = None
+    qualifications: Optional[str] = None
+    photo: Optional[str] = None
+    employment_date: date
+
+    class Config:
+        from_attributes = True 
+
+class TeacherCreate(TeacherBase):
+    pass
+
+class TeacherUpdate(BaseModel):
+    qualifications: Optional[str] = None
+    photo: Optional[str] = None
+    subject_id: Optional[int] = None
+    employment_date: Optional[date] = None        

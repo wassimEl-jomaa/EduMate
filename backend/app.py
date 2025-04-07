@@ -21,7 +21,7 @@ from models import  User
 from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject
 from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase
 from schemas import ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
-from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut
+from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut,TeacherUpdate,TeacherCreate,TeacherBase
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -615,7 +615,7 @@ def create_student(student: StudentCreate, current_user: User = Depends(get_curr
 
 # Read all students
 # Get all students with token validation and user authentication
-@app.get("/students", response_model=List[StudentBase])
+@app.get("/students", response_model=List[StudentOut])
 def get_all_students(
     current_user: User = Depends(get_current_user),  # Token validation and user authentication
     database: Session = Depends(get_db)
@@ -690,6 +690,123 @@ def delete_student(student_id: int, current_user: User = Depends(get_current_use
 
     database.delete(student)
     database.commit()
-    return {"message": f"Student with ID {student_id} has been deleted successfully."}       
+    return {"message": f"Student with ID {student_id} has been deleted successfully."} 
+# Read all teachers
+@app.get("/teachers", response_model=List[TeacherBase])
+def get_all_teachers(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Get all teachers from the database.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    teachers = database.query(Teacher).all()  # Fetch all teachers from the database
+    return teachers
+
+
+# Get a teacher by ID
+@app.get("/teachers/{teacher_id}", response_model=TeacherBase)
+def get_teacher_by_id(teacher_id: int, database: Session = Depends(get_db)):
+    """
+    Get a teacher by ID.
+    """
+    teacher = database.query(Teacher).filter(Teacher.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    return teacher
+
+
+# Add a new teacher
+@app.post("/teachers", response_model=TeacherBase)
+def add_teacher(
+    teacher_data: TeacherCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Add a new teacher to the database.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Check if the user already exists as a teacher
+    existing_teacher = database.query(Teacher).filter(Teacher.user_id == teacher_data.user_id).first()
+    if existing_teacher:
+        raise HTTPException(status_code=400, detail="Teacher already exists")
+
+    # Create a new teacher
+    new_teacher = Teacher(
+        user_id=teacher_data.user_id,
+        subject_id=teacher_data.subject_id,
+        qualifications=teacher_data.qualifications,
+        photo=teacher_data.photo,
+        employment_date=teacher_data.employment_date
+    )
+
+    # Add the new teacher to the database and commit
+    database.add(new_teacher)
+    database.commit()
+    database.refresh(new_teacher)
+    
+    return new_teacher
+
+
+# Update a teacher by ID
+@app.put("/teachers/{teacher_id}", response_model=TeacherBase)
+def update_teacher(
+    teacher_id: int,
+    teacher_update: TeacherUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Update a teacher by ID.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    teacher = database.query(Teacher).filter(Teacher.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    # Update the teacher's attributes
+    teacher.qualifications = teacher_update.qualifications or teacher.qualifications
+    teacher.photo = teacher_update.photo or teacher.photo
+    teacher.subject_id = teacher_update.subject_id or teacher.subject_id
+    teacher.employment_date = teacher_update.employment_date or teacher.employment_date
+    
+    # Commit the changes to the database
+    database.commit()
+    database.refresh(teacher)
+    
+    return teacher
+
+
+# Delete a teacher by ID
+@app.delete("/teachers/{teacher_id}", response_model=dict)
+def delete_teacher(
+    teacher_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Delete a teacher by ID.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    teacher = database.query(Teacher).filter(Teacher.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    # Delete the teacher
+    database.delete(teacher)
+    database.commit()
+
+    return {"message": f"Teacher with ID {teacher_id} has been deleted successfully"}    
+
 if __name__ == '__main__':
     uvicorn.run(app)
