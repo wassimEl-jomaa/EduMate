@@ -16,10 +16,10 @@ from db_setup import get_db
 import crud
 import uvicorn
 from schemas import RoleBase as RoleSchema
-from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate
+from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
 from models import  User
-from models import Role 
-from schemas import UserOut
+from models import Role ,School, Teacher, Student, Parent,Class_Level,Token
+from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase,ClassLevelCreate,ClassLevelUpdate
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -354,5 +354,174 @@ def update_role(
 
     # Return the updated role
     return role  # This will automatically be serialized into the RoleBase Pydantic model
+
+@app.get("/schools", response_model=List[SchoolBase])
+def read_all_schools(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Get all schools from the database. The request will be validated by checking the token.
+    """
+    schools = database.query(School).all()
+    return schools
+
+@app.post("/schools", response_model=SchoolBase)
+def add_school(
+    school_data: SchoolCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Add a new school to the database.
+    """
+    # Check if a school with the same name already exists
+    existing_school = database.query(School).filter(School.name == school_data.name).first()
+    if existing_school:
+        raise HTTPException(status_code=400, detail="School with this name already exists")
+
+    # Create and add the new school
+    new_school = School(
+        name=school_data.name,
+        address=school_data.address,
+        phone_number=school_data.phone_number
+    )
+    database.add(new_school)
+    database.commit()
+    database.refresh(new_school)
+
+    return new_school
+
+# Delete a school by ID
+@app.delete("/schools/{school_id}", response_model=SchoolBase)
+def delete_school(
+    school_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Delete a school by its ID.
+    """
+    school = database.query(School).filter(School.id == school_id).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    # Delete the school
+    database.delete(school)
+    database.commit()
+
+    return school
+
+# Update a school by ID
+@app.put("/schools/{school_id}", response_model=SchoolBase)
+def update_school(
+    school_id: int,
+    school_update: SchoolUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Update a school by ID.
+    """
+    school = database.query(School).filter(School.id == school_id).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    # Update the school's attributes
+    if school_update.name:
+        school.name = school_update.name
+    if school_update.address:
+        school.address = school_update.address
+    if school_update.phone_number:
+        school.phone_number = school_update.phone_number
+
+    # Commit the changes to the database
+    database.commit()
+    database.refresh(school)
+# Create a new class level
+@app.post("/class_levels", response_model=ClassLevelBase)
+def add_class_level(
+    class_level_data: ClassLevelCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Add a new class level to the database.
+    """
+    # Check if the class level with the same name already exists
+    existing_class_level = database.query(Class_Level).filter(Class_Level.name == class_level_data.name).first()
+    if existing_class_level:
+        raise HTTPException(status_code=400, detail="Class level with this name already exists")
+
+    # Create and add the new class level
+    new_class_level = Class_Level(
+        name=class_level_data.name,
+        school_id=class_level_data.school_id
+    )
+    database.add(new_class_level)
+    database.commit()
+    database.refresh(new_class_level)
+
+    return new_class_level
+
+# Get all class levels
+@app.get("/class_levels", response_model=List[ClassLevelBase])
+def read_all_class_levels(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Get all class levels from the database.
+    """
+    class_levels = database.query(Class_Level).all()
+    return class_levels
+
+# Update a class level by ID
+@app.put("/class_levels/{class_level_id}", response_model=ClassLevelBase)
+def update_class_level(
+    class_level_id: int,
+    class_level_update: ClassLevelUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Update a class level by its ID.
+    """
+    class_level = database.query(Class_Level).filter(Class_Level.id == class_level_id).first()
+    if not class_level:
+        raise HTTPException(status_code=404, detail="Class level not found")
+
+    # Update the class level's attributes
+    if class_level_update.name:
+        class_level.name = class_level_update.name
+    if class_level_update.school_id:
+        class_level.school_id = class_level_update.school_id
+
+    # Commit the changes to the database
+    database.commit()
+    database.refresh(class_level)
+
+    return class_level
+
+# Delete a class level by ID
+@app.delete("/class_levels/{class_level_id}", response_model=ClassLevelBase)
+def delete_class_level(
+    class_level_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Delete a class level by its ID.
+    """
+    class_level = database.query(Class_Level).filter(Class_Level.id == class_level_id).first()
+    if not class_level:
+        raise HTTPException(status_code=404, detail="Class level not found")
+
+    # Delete the class level
+    database.delete(class_level)
+    database.commit()
+
+    return class_level
+    return school    
 if __name__ == '__main__':
     uvicorn.run(app)

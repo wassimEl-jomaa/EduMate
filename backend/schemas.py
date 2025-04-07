@@ -73,3 +73,40 @@ class RoleCreate(BaseModel):
         from_attributes = True  
 class RoleUpdate(BaseModel):
     name: str 
+
+
+class SchoolBase(BaseModel):
+    id: int
+    name: str
+    address: str
+    phone_number: Optional[str] = None
+
+
+    class Config:
+       from_attributes = True 
+class SchoolCreate(BaseModel):
+    name: str
+    address: str
+    phone_number: Optional[str] = None
+
+class SchoolUpdate(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    phone_number: Optional[str] = None    
+
+
+class ClassLevelBase(BaseModel):
+    id: int
+    name: str
+    school_id: Optional[int]  # Foreign key to School table
+
+    class Config:
+        from_attributes = True    # Tells Pydantic to treat the SQLAlchemy model as a dict
+
+class ClassLevelCreate(BaseModel):
+    name: str
+    school_id: Optional[int]  # Foreign key to School table
+
+class ClassLevelUpdate(BaseModel):
+    name: Optional[str] = None
+    school_id: Optional[int] = None     
