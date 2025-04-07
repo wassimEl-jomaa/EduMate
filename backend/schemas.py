@@ -165,3 +165,26 @@ class TeacherUpdate(BaseModel):
     photo: Optional[str] = None
     subject_id: Optional[int] = None
     employment_date: Optional[date] = None        
+class ParentBase(BaseModel):
+    user_id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    OuserOut: Optional[UserOut] = None  # Nested UserOut model
+    class Config:
+        from_attributes = True 
+class ParentOut(BaseModel):
+    id: int
+   
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    
+    # You can include the UserOut model here if you want to embed user data
+    user: Optional["UserOut"] = None  # Assuming you have a UserOut model to represent the user
+    class Config:
+        from_attributes = True  # Allows Pydantic to read data from SQLAlchemy models
+      
+class ParentCreate(ParentBase):
+    pass
+
+class ParentUpdate(BaseModel):
+    user_id: Optional[int] = None  # Optional field to update user_id    

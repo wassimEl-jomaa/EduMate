@@ -22,7 +22,7 @@ from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subj
 from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase
 from schemas import ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
 from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut,TeacherUpdate,TeacherCreate,TeacherBase
-
+from schemas import ParentBase,ParentCreate,ParentUpdate,ParentOut
 # Initialize the FastAPI app
 app = FastAPI()
 security = HTTPBearer()
@@ -806,7 +806,118 @@ def delete_teacher(
     database.delete(teacher)
     database.commit()
 
-    return {"message": f"Teacher with ID {teacher_id} has been deleted successfully"}    
+    return {"message": f"Teacher with ID {teacher_id} has been deleted successfully"} 
+# Read all parents
+@app.get("/parents", response_model=List[ParentOut])
+def get_all_parents(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Get all parents from the database.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Fetch all parents from the database with their associated user details
+    parents = database.query(Parent).options(joinedload(Parent.user)).all()
+
+    # Return the list of parents
+    return parents
+
+# Get a parent by ID
+@app.get("/parents/{parent_id}", response_model=ParentBase)
+def get_parent_by_id(parent_id: int, database: Session = Depends(get_db)):
+    """
+    Get a parent by ID.
+    """
+    parent = database.query(Parent).filter(Parent.id == parent_id).first()
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent not found")
+    return parent
+
+
+# Add a new parent
+@app.post("/parents", response_model=ParentBase)
+def add_parent(
+    parent_data: ParentCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Add a new parent to the database.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Check if the user already exists as a parent
+    existing_parent = database.query(Parent).filter(Parent.user_id == parent_data.user_id).first()
+    if existing_parent:
+        raise HTTPException(status_code=400, detail="Parent already exists")
+
+    # Create a new parent
+    new_parent = Parent(
+        user_id=parent_data.user_id
+    )
+
+    # Add the new parent to the database and commit
+    database.add(new_parent)
+    database.commit()
+    database.refresh(new_parent)
+    
+    return new_parent
+
+
+# Update a parent by ID
+@app.put("/parents/{parent_id}", response_model=ParentBase)
+def update_parent(
+    parent_id: int,
+    parent_update: ParentUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Update a parent by ID.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    parent = database.query(Parent).filter(Parent.id == parent_id).first()
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    # Update the parent's attributes (if provided)
+    parent.user_id = parent_update.user_id or parent.user_id
+    
+    # Commit the changes to the database
+    database.commit()
+    database.refresh(parent)
+    
+    return parent
+
+
+# Delete a parent by ID
+@app.delete("/parents/{parent_id}", response_model=dict)
+def delete_parent(
+    parent_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    database: Session = Depends(get_db)
+):
+    """
+    Delete a parent by ID.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    parent = database.query(Parent).filter(Parent.id == parent_id).first()
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    # Delete the parent
+    database.delete(parent)
+    database.commit()
+
+    return {"message": f"Parent with ID {parent_id} has been deleted successfully"}       
 
 if __name__ == '__main__':
     uvicorn.run(app)
