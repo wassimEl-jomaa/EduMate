@@ -138,8 +138,7 @@ def get_user_by_id(
 @app.post("/users/", response_model=UserOut)
 def add_users(
     user_params: UserIn,
-    current_user: User = Depends(get_current_user),  # Validate token and authenticate user
-    database: Session = Depends(get_db)
+    database: Session = Depends(get_db)  # Removed token validation and user authentication
 ):
     """
     Create a new user in the database.
