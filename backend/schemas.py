@@ -247,3 +247,72 @@ class SubjectClassLevelUpdate(BaseModel):
     class_level_id: Optional[int] = None
     subject_id: Optional[int] = None
     teacher_id: Optional[int] = None    
+
+class GradeBase(BaseModel):
+    id: int
+    grade: str
+    description: Optional[str] = None
+    feedback: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    student_homework_id: int
+
+    class Config:
+        from_attributes = True   
+class GradeCreate(BaseModel):
+    grade: str
+    description: Optional[str] = None
+    feedback: Optional[str] = None
+    student_homework_id: int        
+class GradeUpdate(BaseModel):
+    grade: Optional[str] = None
+    description: Optional[str] = None
+    feedback: Optional[str] = None    
+class StudentHomeworkBase(BaseModel):
+    id: int
+    student_id: int
+    homework_id: int
+    file_attachement_id: Optional[int] = None  
+    class Config:
+        from_attributes = True    
+class StudentHomeworkCreate(BaseModel):
+    student_id: int
+    homework_id: int
+    file_attachement_id: Optional[int] = None     
+class StudentHomeworkUpdate(BaseModel):
+    student_id: Optional[int] = None
+    homework_id: Optional[int] = None
+    file_attachement_id: Optional[int] = None  
+
+class FileAttachmentBase(BaseModel):
+    id: int
+    file_name: str
+    file_path: str
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime 
+    class Config:
+        from_attributes = True     
+class FileAttachmentCreate(BaseModel):
+    file_name: str
+    file_path: str
+    description: Optional[str] = None      
+class FileAttachmentUpdate(BaseModel):
+    file_name: Optional[str] = None
+    file_path: Optional[str] = None
+    description: Optional[str] = None      
+class MessageBase(BaseModel):
+    id: int
+    message: str
+    read_status: str
+    created_at: datetime
+    updated_at: datetime
+    recipient_user_id: int
+    sender_user_id: int 
+    class Config:
+        from_attributes = True     
+class MessageCreate(BaseModel):
+    message: str
+    recipient_user_id: int   
+class MessageUpdate(BaseModel):
+    read_status: Optional[str] = None         

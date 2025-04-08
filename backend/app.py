@@ -15,18 +15,19 @@ from passlib.context import CryptContext
 from db_setup import get_db
 import crud
 import uvicorn
-from schemas import RoleBase as RoleSchema
+from schemas import RoleBase ,MessageBase,MessageCreate,MessageUpdate
 from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
-from models import  User,Homework,Subject_Class_Level
+
+from models import  User,Homework,Subject_Class_Level,Grade,Student_Homework,File_Attachment
 from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject,Guardian
 from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase
 from schemas import ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
 from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut,TeacherUpdate,TeacherCreate,TeacherBase
 from schemas import ParentBase,ParentCreate,ParentUpdate,ParentOut
 from schemas import GuardianCreate,GuardianUpdate,GuardianOut,HomeworkCreate,HomeworkUpdate,HomeworkOut,HomeworkCreate
-from schemas import SubjectClassLevelBase,SubjectClassLevelCreate,SubjectClassLevelUpdate
-
-
+from schemas import SubjectClassLevelBase,SubjectClassLevelCreate,SubjectClassLevelUpdate,StudentHomeworkBase
+from schemas import GradeBase,GradeCreate,GradeUpdate,StudentHomeworkCreate,StudentHomeworkUpdate
+from schemas import FileAttachmentBase,FileAttachmentCreate,FileAttachmentUpdate
 # Initialize the FastAPI app
 app = FastAPI()
 security = HTTPBearer()
@@ -1226,6 +1227,381 @@ def delete_subject_class_level(
     db.delete(subject_class_level)
     db.commit()
 
-    return {"message": f"Subject_Class_Level with ID {subject_class_level_id} has been deleted successfully"}             
+    return {"message": f"Subject_Class_Level with ID {subject_class_level_id} has been deleted successfully"} 
+@app.post("/grades", response_model=GradeBase)
+def add_grade(
+    grade_data: GradeCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new grade to the database.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to add grades")
+
+    # Ensure the student_homework exists
+    student_homework = db.query(Student_Homework).filter(Student_Homework.id == grade_data.student_homework_id).first()
+    if not student_homework:
+        raise HTTPException(status_code=404, detail="Student homework not found")
+
+    # Create the new grade
+    new_grade = Grade(
+        grade=grade_data.grade,
+        description=grade_data.description,
+        feedback=grade_data.feedback,
+        student_homework_id=grade_data.student_homework_id
+    )
+    db.add(new_grade)
+    db.commit()
+    db.refresh(new_grade)
+
+    return new_grade
+@app.get("/grades", response_model=List[GradeBase])
+def get_all_grades(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Get all grades from the database.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch all grades
+    grades = db.query(Grade).all()
+
+    return grades
+@app.put("/grades/{grade_id}", response_model=GradeBase)
+def update_grade(
+    grade_id: int,
+    grade_update: GradeUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Update a grade by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to update grades")
+
+    # Fetch the grade
+    grade = db.query(Grade).filter(Grade.id == grade_id).first()
+    if not grade:
+        raise HTTPException(status_code=404, detail="Grade not found")
+
+    # Update the grade fields
+    if grade_update.grade:
+        grade.grade = grade_update.grade
+    if grade_update.description:
+        grade.description = grade_update.description
+    if grade_update.feedback:
+        grade.feedback = grade_update.feedback
+
+    db.commit()
+    db.refresh(grade)
+
+    return grade  
+@app.delete("/grades/{grade_id}")
+def delete_grade(
+    grade_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a grade by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to delete grades")
+
+    # Fetch the grade
+    grade = db.query(Grade).filter(Grade.id == grade_id).first()
+    if not grade:
+        raise HTTPException(status_code=404, detail="Grade not found")
+
+    # Delete the grade
+    db.delete(grade)
+    db.commit()
+
+    return {"message": f"Grade with ID {grade_id} has been deleted successfully"} 
+@app.post("/student_homeworks", response_model=StudentHomeworkBase)
+def add_student_homework(
+    student_homework_data: StudentHomeworkCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new Student_Homework to the database.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to add student homework")
+
+    # Ensure the student and homework exist
+    student = db.query(Student).filter(Student.id == student_homework_data.student_id).first()
+    homework = db.query(Homework).filter(Homework.id == student_homework_data.homework_id).first()
+
+    if not student or not homework:
+        raise HTTPException(status_code=404, detail="Student or Homework not found")
+
+    # Create the new Student_Homework
+    new_student_homework = Student_Homework(
+        student_id=student_homework_data.student_id,
+        homework_id=student_homework_data.homework_id,
+        file_attachement_id=student_homework_data.file_attachement_id
+    )
+    db.add(new_student_homework)
+    db.commit()
+    db.refresh(new_student_homework)
+
+    return new_student_homework  
+@app.get("/student_homeworks", response_model=List[StudentHomeworkBase])
+def get_all_student_homeworks(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Get all Student_Homework entries from the database.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch all Student_Homework entries
+    student_homeworks = db.query(Student_Homework).all()
+
+    return student_homeworks   
+@app.put("/student_homeworks/{student_homework_id}", response_model=StudentHomeworkBase)
+def update_student_homework(
+    student_homework_id: int,
+    student_homework_update: StudentHomeworkUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Update a Student_Homework by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to update student homework")
+
+    # Fetch the Student_Homework entry
+    student_homework = db.query(Student_Homework).filter(Student_Homework.id == student_homework_id).first()
+    if not student_homework:
+        raise HTTPException(status_code=404, detail="Student_Homework not found")
+
+    # Update the fields
+    if student_homework_update.student_id:
+        student_homework.student_id = student_homework_update.student_id
+    if student_homework_update.homework_id:
+        student_homework.homework_id = student_homework_update.homework_id
+    if student_homework_update.file_attachement_id:
+        student_homework.file_attachement_id = student_homework_update.file_attachement_id
+
+    db.commit()
+    db.refresh(student_homework)
+
+    return student_homework   
+@app.delete("/student_homeworks/{student_homework_id}")
+def delete_student_homework(
+    student_homework_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a Student_Homework by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to delete student homework")
+
+    # Fetch the Student_Homework entry
+    student_homework = db.query(Student_Homework).filter(Student_Homework.id == student_homework_id).first()
+    if not student_homework:
+        raise HTTPException(status_code=404, detail="Student_Homework not found")
+
+    # Delete the entry
+    db.delete(student_homework)
+    db.commit()
+
+    return {"message": f"Student_Homework with ID {student_homework_id} has been deleted successfully"}   
+@app.post("/messages", response_model=MessageBase)
+def add_message(
+    message_data: MessageCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new message to the database.
+    """
+    # Ensure the recipient exists
+    recipient = db.query(User).filter(User.id == message_data.recipient_user_id).first()
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient user not found")
+
+    # Create the new message
+    new_message = Message(
+        message=message_data.message,
+        read_status="Unread",
+        recipient_user_id=message_data.recipient_user_id,
+        sender_user_id=current_user.id
+    )
+    db.add(new_message)
+    db.commit()
+    db.refresh(new_message)
+
+    return new_message  
+@app.get("/messages", response_model=List[MessageBase])
+def get_all_messages(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Get all messages for the current user.
+    """
+    # Fetch all messages where the current user is the recipient
+    messages = db.query(Message).filter(Message.recipient_user_id == current_user.id).all()
+
+    return messages  
+@app.put("/messages/{message_id}", response_model=MessageBase)
+def update_message(
+    message_id: int,
+    message_update: MessageUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Update a message by ID (e.g., mark as read).
+    """
+    # Fetch the message
+    message = db.query(Message).filter(Message.id == message_id, Message.recipient_user_id == current_user.id).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found or not authorized to update")
+
+    # Update the read_status
+    if message_update.read_status:
+        message.read_status = message_update.read_status
+
+    db.commit()
+    db.refresh(message)
+
+    return message  
+@app.delete("/messages/{message_id}")
+def delete_message(
+    message_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a message by ID.
+    """
+    # Fetch the message
+    message = db.query(Message).filter(Message.id == message_id, Message.recipient_user_id == current_user.id).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found or not authorized to delete")
+
+    # Delete the message
+    db.delete(message)
+    db.commit()
+
+    return {"message": f"Message with ID {message_id} has been deleted successfully"}   
+@app.post("/file_attachments", response_model=FileAttachmentBase)
+def add_file_attachment(
+    file_attachment_data: FileAttachmentCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new File_Attachment to the database.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher or admin)
+    if current_user.role.name not in ["Teacher", "Admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized to add file attachments")
+
+    # Create the new File_Attachment
+    new_file_attachment = File_Attachment(
+        file_name=file_attachment_data.file_name,
+        file_path=file_attachment_data.file_path,
+        description=file_attachment_data.description
+    )
+    db.add(new_file_attachment)
+    db.commit()
+    db.refresh(new_file_attachment)
+
+    return new_file_attachment
+@app.get("/file_attachments", response_model=List[FileAttachmentBase])
+def get_all_file_attachments(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Get all File_Attachment entries from the database.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch all File_Attachment entries
+    file_attachments = db.query(File_Attachment).all()
+
+    return file_attachments  
+@app.put("/file_attachments/{file_attachment_id}", response_model=FileAttachmentBase)
+def update_file_attachment(
+    file_attachment_id: int,
+    file_attachment_update: FileAttachmentUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Update a File_Attachment by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher or admin)
+    if current_user.role.name not in ["Teacher", "Admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update file attachments")
+
+    # Fetch the File_Attachment entry
+    file_attachment = db.query(File_Attachment).filter(File_Attachment.id == file_attachment_id).first()
+    if not file_attachment:
+        raise HTTPException(status_code=404, detail="File_Attachment not found")
+
+    # Update the fields
+    if file_attachment_update.file_name:
+        file_attachment.file_name = file_attachment_update.file_name
+    if file_attachment_update.file_path:
+        file_attachment.file_path = file_attachment_update.file_path
+    if file_attachment_update.description:
+        file_attachment.description = file_attachment_update.description
+
+    db.commit()
+    db.refresh(file_attachment)
+
+    return file_attachment  
+@app.delete("/file_attachments/{file_attachment_id}")
+def delete_file_attachment(
+    file_attachment_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a File_Attachment by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., admin)
+    if current_user.role.name != "Admin":
+        raise HTTPException(status_code=403, detail="Not authorized to delete file attachments")
+
+    # Fetch the File_Attachment entry
+    file_attachment = db.query(File_Attachment).filter(File_Attachment.id == file_attachment_id).first()
+    if not file_attachment:
+        raise HTTPException(status_code=404, detail="File_Attachment not found")
+
+    # Delete the entry
+    db.delete(file_attachment)
+    db.commit()
+
+    return {"message": f"File_Attachment with ID {file_attachment_id} has been deleted successfully"}                                                 
 if __name__ == '__main__':
     uvicorn.run(app)
