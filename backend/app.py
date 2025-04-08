@@ -17,7 +17,7 @@ import crud
 import uvicorn
 from schemas import RoleBase ,MessageBase,MessageCreate,MessageUpdate
 from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
-
+from models import Recommended_Resource
 from models import  User,Homework,Subject_Class_Level,Grade,Student_Homework,File_Attachment
 from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject,Guardian
 from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase
@@ -27,7 +27,7 @@ from schemas import ParentBase,ParentCreate,ParentUpdate,ParentOut
 from schemas import GuardianCreate,GuardianUpdate,GuardianOut,HomeworkCreate,HomeworkUpdate,HomeworkOut,HomeworkCreate
 from schemas import SubjectClassLevelBase,SubjectClassLevelCreate,SubjectClassLevelUpdate,StudentHomeworkBase
 from schemas import GradeBase,GradeCreate,GradeUpdate,StudentHomeworkCreate,StudentHomeworkUpdate
-from schemas import FileAttachmentBase,FileAttachmentCreate,FileAttachmentUpdate
+from schemas import FileAttachmentBase,FileAttachmentCreate,FileAttachmentUpdate,RecommendedResourceBase,RecommendedResourceCreate,RecommendedResourceUpdate
 # Initialize the FastAPI app
 app = FastAPI()
 security = HTTPBearer()
@@ -1602,6 +1602,106 @@ def delete_file_attachment(
     db.delete(file_attachment)
     db.commit()
 
-    return {"message": f"File_Attachment with ID {file_attachment_id} has been deleted successfully"}                                                 
+    return {"message": f"File_Attachment with ID {file_attachment_id} has been deleted successfully"}        
+@app.post("/recommended_resources", response_model=RecommendedResourceBase)
+def add_recommended_resource(
+    resource_data: RecommendedResourceCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new Recommended_Resource to the database.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher or admin)
+    if current_user.role.name not in ["Teacher", "Admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized to add recommended resources")
+
+    # Ensure the subject exists
+    subject = db.query(Subject).filter(Subject.id == resource_data.subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    # Create the new Recommended_Resource
+    new_resource = Recommended_Resource(
+        title=resource_data.title,
+        url=resource_data.url,
+        description=resource_data.description,
+        subject_id=resource_data.subject_id
+    )
+    db.add(new_resource)
+    db.commit()
+    db.refresh(new_resource)
+
+    return new_resource  
+@app.get("/recommended_resources", response_model=List[RecommendedResourceBase])
+def get_all_recommended_resources(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Get all Recommended_Resource entries from the database.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch all Recommended_Resource entries
+    resources = db.query(Recommended_Resource).all()
+
+    return resources
+@app.put("/recommended_resources/{resource_id}", response_model=RecommendedResourceBase)
+def update_recommended_resource(
+    resource_id: int,
+    resource_update: RecommendedResourceUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Update a Recommended_Resource by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher or admin)
+    if current_user.role.name not in ["Teacher", "Admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update recommended resources")
+
+    # Fetch the Recommended_Resource entry
+    resource = db.query(Recommended_Resource).filter(Recommended_Resource.id == resource_id).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Recommended_Resource not found")
+
+    # Update the fields
+    if resource_update.title:
+        resource.title = resource_update.title
+    if resource_update.url:
+        resource.url = resource_update.url
+    if resource_update.description:
+        resource.description = resource_update.description
+
+    db.commit()
+    db.refresh(resource)
+
+    return resource
+@app.delete("/recommended_resources/{resource_id}")
+def delete_recommended_resource(
+    resource_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a Recommended_Resource by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., admin)
+    if current_user.role.name != "Admin":
+        raise HTTPException(status_code=403, detail="Not authorized to delete recommended resources")
+
+    # Fetch the Recommended_Resource entry
+    resource = db.query(Recommended_Resource).filter(Recommended_Resource.id == resource_id).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Recommended_Resource not found")
+
+    # Delete the entry
+    db.delete(resource)
+    db.commit()
+
+    return {"message": f"Recommended_Resource with ID {resource_id} has been deleted successfully"}                                                       
 if __name__ == '__main__':
     uvicorn.run(app)

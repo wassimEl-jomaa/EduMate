@@ -315,4 +315,23 @@ class MessageCreate(BaseModel):
     message: str
     recipient_user_id: int   
 class MessageUpdate(BaseModel):
-    read_status: Optional[str] = None         
+    read_status: Optional[str] = None  
+class RecommendedResourceBase(BaseModel):
+    id: int
+    title: str
+    url: str
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    subject_id: int 
+    class Config:
+        from_attributes = True  
+class RecommendedResourceCreate(BaseModel):
+    title: str
+    url: str
+    description: Optional[str] = None
+    subject_id: int
+class RecommendedResourceUpdate(BaseModel):
+    title: Optional[str] = None
+    url: Optional[str] = None
+    description: Optional[str] = None                      
