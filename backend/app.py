@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from db_setup import get_db
 import crud
 import uvicorn
-from schemas import RoleBase ,MessageBase,MessageCreate,MessageUpdate
+from schemas import RoleBase ,MessageBase,MessageCreate,MessageUpdate, SubjectClassLevelOut
 from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
 from models import Recommended_Resource,Student_Homework
 from models import  User,Homework,Subject_Class_Level,Grade,Student_Homework,File_Attachment
@@ -26,7 +26,7 @@ from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut,TeacherUp
 from schemas import ParentBase,ParentCreate,ParentUpdate,ParentOut,StudentHomeworkBase,StudentHomeworkUpdate,StudentHomeworkCreate
 from schemas import GuardianCreate,GuardianUpdate,GuardianOut,HomeworkCreate,HomeworkUpdate,HomeworkOut,HomeworkCreate
 from schemas import SubjectClassLevelBase,SubjectClassLevelCreate,SubjectClassLevelUpdate,StudentHomeworkBase
-from schemas import GradeBase,GradeCreate,GradeUpdate,StudentHomeworkCreate,StudentHomeworkUpdate,TeacherOut
+from schemas import GradeBase,GradeCreate,GradeUpdate,StudentHomeworkCreate,StudentHomeworkUpdate,TeacherOut,StudentHomeworkOut
 from schemas import FileAttachmentBase,FileAttachmentCreate,FileAttachmentUpdate,RecommendedResourceBase,RecommendedResourceCreate,RecommendedResourceUpdate
 # Initialize the FastAPI app
 app = FastAPI()
@@ -1179,7 +1179,7 @@ def add_subject_class_level(
     db.refresh(new_subject_class_level)
 
     return new_subject_class_level   
-@app.get("/subject_class_levels", response_model=List[SubjectClassLevelBase])
+@app.get("/subject_class_levels", response_model=List[SubjectClassLevelOut])
 def get_all_subject_class_levels(
     current_user: User = Depends(get_current_user),  # Token validation and user authentication
     db: Session = Depends(get_db)
@@ -1380,7 +1380,7 @@ def add_student_homework(
     db.refresh(new_student_homework)
 
     return new_student_homework  
-@app.get("/student_homeworks", response_model=List[StudentHomeworkBase])
+@app.get("/student_homeworks", response_model=List[StudentHomeworkOut])
 def get_all_student_homeworks(
     current_user: User = Depends(get_current_user),  # Token validation and user authentication
     db: Session = Depends(get_db)
@@ -1392,10 +1392,13 @@ def get_all_student_homeworks(
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # Fetch all Student_Homework entries
-    student_homeworks = db.query(Student_Homework).all()
+    # Fetch all Student_Homework entries with related homework data
+    student_homeworks = db.query(Student_Homework).options(
+        joinedload(Student_Homework.homework),  # Load the related homework data
+        joinedload(Student_Homework.student).joinedload(Student.user)  # Load student and user data
+    ).all()
 
-    return student_homeworks   
+    return student_homeworks
 @app.put("/student_homeworks/{student_homework_id}", response_model=StudentHomeworkBase)
 def update_student_homework(
     student_homework_id: int,

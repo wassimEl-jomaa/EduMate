@@ -238,7 +238,9 @@ class HomeworkOut(HomeworkBase):
     priority: str
     status: str
     subject_class_level_id: int
-    user: Optional["UserIn"] = None  
+    subject_class_level: Optional["SubjectClassLevelOut"] = None  # Include the SubjectClassLevel relationship
+
+   
 
     class Config:
         from_attributes = True    
@@ -251,6 +253,15 @@ class SubjectClassLevelBase(BaseModel):
 
     class Config:
         from_attributes = True   
+class SubjectClassLevelOut(SubjectClassLevelBase):
+    id: int
+    subject: Optional[SubjectBase] = None  # Include the Subject relationship
+    class_level: Optional[ClassLevelBase] = None  # Include the ClassLevel relationship
+    teacher: Optional[TeacherOut] = None  # Include the Teacher relationship
+    
+
+    class Config:
+        from_attributes = True         
 class SubjectClassLevelCreate(BaseModel):
     class_level_id: int
     subject_id: int
@@ -286,7 +297,29 @@ class StudentHomeworkBase(BaseModel):
     homework_id: int
     file_attachement_id: Optional[int] = None  
     class Config:
-        from_attributes = True    
+        from_attributes = True   
+
+
+
+class StudentOut(StudentBase):
+    id: int
+    class_level_id: Optional[int] = None   
+    user: Optional["UserIn"] = None    
+    class_level: Optional["ClassLevelBase"] = None  # Include the ClassLevel relationship
+    class Config:
+        from_attributes = True     
+class StudentHomeworkOut(BaseModel):
+    id: int
+    student_id: int
+    homework_id: int
+    file_attachement_id: Optional[int]
+    student: Optional[StudentOut]  # Include the Student relationship
+    homework: Optional[HomeworkOut]  # Include the Homework relationship
+
+    
+
+    class Config:
+        from_attributes = True                       
 class StudentHomeworkCreate(BaseModel):
     student_id: int
     homework_id: int
