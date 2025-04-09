@@ -17,16 +17,16 @@ import crud
 import uvicorn
 from schemas import RoleBase ,MessageBase,MessageCreate,MessageUpdate
 from schemas import UserBase, UserIn, UserOut,GetUser, UpdateUser,RoleBase, RoleOut,RoleCreate,RoleUpdate,SchoolBase
-from models import Recommended_Resource
+from models import Recommended_Resource,Student_Homework
 from models import  User,Homework,Subject_Class_Level,Grade,Student_Homework,File_Attachment
 from models import Role ,School, Teacher, Student, Parent,Class_Level,Token,Subject,Guardian
 from schemas import UserOut,SchoolBase,SchoolCreate,SchoolUpdate,ClassLevelBase
 from schemas import ClassLevelCreate,ClassLevelUpdate,SubjectBase,SubjectUpdate,SubjectCreate
 from schemas import StudentBase,StudentCreate,StudentUpdate,StudentOut,TeacherUpdate,TeacherCreate,TeacherBase
-from schemas import ParentBase,ParentCreate,ParentUpdate,ParentOut
+from schemas import ParentBase,ParentCreate,ParentUpdate,ParentOut,StudentHomeworkBase,StudentHomeworkUpdate,StudentHomeworkCreate
 from schemas import GuardianCreate,GuardianUpdate,GuardianOut,HomeworkCreate,HomeworkUpdate,HomeworkOut,HomeworkCreate
 from schemas import SubjectClassLevelBase,SubjectClassLevelCreate,SubjectClassLevelUpdate,StudentHomeworkBase
-from schemas import GradeBase,GradeCreate,GradeUpdate,StudentHomeworkCreate,StudentHomeworkUpdate
+from schemas import GradeBase,GradeCreate,GradeUpdate,StudentHomeworkCreate,StudentHomeworkUpdate,TeacherOut
 from schemas import FileAttachmentBase,FileAttachmentCreate,FileAttachmentUpdate,RecommendedResourceBase,RecommendedResourceCreate,RecommendedResourceUpdate
 # Initialize the FastAPI app
 app = FastAPI()
@@ -632,8 +632,8 @@ def get_all_students(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # Fetch all students from the database
-    students = database.query(Student).all()
-
+    students = database.query(Student).options(joinedload(Student.user)).all()
+  
     # Return the list of students
     return students
 
@@ -696,7 +696,7 @@ def delete_student(student_id: int, current_user: User = Depends(get_current_use
     database.commit()
     return {"message": f"Student with ID {student_id} has been deleted successfully."} 
 # Read all teachers
-@app.get("/teachers", response_model=List[TeacherBase])
+@app.get("/teachers", response_model=List[TeacherOut])
 def get_all_teachers(
     current_user: User = Depends(get_current_user),  # Token validation and user authentication
     database: Session = Depends(get_db)
@@ -707,21 +707,34 @@ def get_all_teachers(
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    teachers = database.query(Teacher).all()  # Fetch all teachers from the database
+    # Use the correct model name 'Teacher'
+    teachers = database.query(Teacher).options(joinedload(Teacher.user)).all()
+    
     return teachers
 
-
 # Get a teacher by ID
-@app.get("/teachers/{teacher_id}", response_model=TeacherBase)
-def get_teacher_by_id(teacher_id: int, database: Session = Depends(get_db)):
+@app.get("/teachers/{teacher_id}", response_model=TeacherOut)
+def get_teacher_by_id(
+    teacher_id: int,
+    current_user: User = Depends(get_current_user),
+    database: Session = Depends(get_db)
+):
     """
     Get a teacher by ID.
     """
-    teacher = database.query(Teacher).filter(Teacher.id == teacher_id).first()
-    if not teacher:
-        raise HTTPException(status_code=404, detail="Teacher not found")
-    return teacher
+    # Debug log
+    print(f"Fetching teacher with ID: {teacher_id}")
 
+    teacher = (
+        database.query(Teacher)
+        .filter(Teacher.id == teacher_id)
+        .first()
+    )
+    if not teacher:
+        print(f"Teacher with ID {teacher_id} not found.")
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    return teacher
 
 # Add a new teacher
 @app.post("/teachers", response_model=TeacherBase)
@@ -1058,7 +1071,16 @@ def add_homework(
     db.refresh(new_homework)
 
     return new_homework
-
+@app.get("/homeworks", response_model=List[HomeworkOut])
+def get_homeworks(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch all homeworks.
+    """
+    homeworks = db.query(Homework).all()
+    return homeworks
 # Read Homework
 @app.get("/homework/{homework_id}", response_model=HomeworkOut)
 def get_homework(
@@ -1701,6 +1723,107 @@ def delete_recommended_resource(
     db.delete(resource)
     db.commit()
 
-    return {"message": f"Recommended_Resource with ID {resource_id} has been deleted successfully"}                                                       
+    return {"message": f"Recommended_Resource with ID {resource_id} has been deleted successfully"} 
+@app.post("/student_homeworks", response_model=StudentHomeworkBase)
+def add_student_homework(
+    student_homework_data: StudentHomeworkCreate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new Student_Homework to the database.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to add student homework")
+
+    # Ensure the student and homework exist
+    student = db.query(Student).filter(Student.id == student_homework_data.student_id).first()
+    homework = db.query(Homework).filter(Homework.id == student_homework_data.homework_id).first()
+
+    if not student or not homework:
+        raise HTTPException(status_code=404, detail="Student or Homework not found")
+
+    # Create the new Student_Homework
+    new_student_homework = Student_Homework(
+        student_id=student_homework_data.student_id,
+        homework_id=student_homework_data.homework_id,
+        file_attachement_id=student_homework_data.file_attachement_id
+    )
+    db.add(new_student_homework)
+    db.commit()
+    db.refresh(new_student_homework)
+
+    return new_student_homework
+@app.get("/student_homeworks", response_model=List[StudentHomeworkBase])
+def get_all_student_homeworks(
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Get all Student_Homework entries from the database.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch all Student_Homework entries
+    student_homeworks = db.query(Student_Homework).all()
+
+    return student_homeworks
+@app.put("/student_homeworks/{student_homework_id}", response_model=StudentHomeworkBase)
+def update_student_homework(
+    student_homework_id: int,
+    student_homework_update: StudentHomeworkUpdate,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Update a Student_Homework by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to update student homework")
+
+    # Fetch the Student_Homework entry
+    student_homework = db.query(Student_Homework).filter(Student_Homework.id == student_homework_id).first()
+    if not student_homework:
+        raise HTTPException(status_code=404, detail="Student_Homework not found")
+
+    # Update the fields
+    if student_homework_update.student_id:
+        student_homework.student_id = student_homework_update.student_id
+    if student_homework_update.homework_id:
+        student_homework.homework_id = student_homework_update.homework_id
+    if student_homework_update.file_attachement_id:
+        student_homework.file_attachement_id = student_homework_update.file_attachement_id
+
+    db.commit()
+    db.refresh(student_homework)
+
+    return student_homework
+@app.delete("/student_homeworks/{student_homework_id}")
+def delete_student_homework(
+    student_homework_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a Student_Homework by ID.
+    """
+    # Ensure the user has the necessary permissions (e.g., teacher)
+    if current_user.role.name != "Teacher":
+        raise HTTPException(status_code=403, detail="Not authorized to delete student homework")
+
+    # Fetch the Student_Homework entry
+    student_homework = db.query(Student_Homework).filter(Student_Homework.id == student_homework_id).first()
+    if not student_homework:
+        raise HTTPException(status_code=404, detail="Student_Homework not found")
+
+    # Delete the entry
+    db.delete(student_homework)
+    db.commit()
+
+    return {"message": f"Student_Homework with ID {student_homework_id} has been deleted successfully"}                                                                     
 if __name__ == '__main__':
     uvicorn.run(app)

@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const ManageHomework = () => {
-  const [homeworks, setHomeworks] = useState([]); // State for the list of homework
+  const [homeworks, setHomeworks] = useState([]);
   const [subjects, setSubjects] = useState([]);
-
-  const [teachers, setTeachers] = useState([]); // State for the list of teachers
-  const [arskursList, setArskursList] = useState([]); // State for the list of årskurs
+  const [teachers, setTeachers] = useState([]);
+  const [classLevels, setClassLevels] = useState([]);
   const [homeworkData, setHomeworkData] = useState({
     title: "",
     description: "",
@@ -16,90 +15,50 @@ const ManageHomework = () => {
     user_id: "",
     subject_id: "",
     teacher_id: "",
-    arskurs_id: "", // Add arskurs_id to the state
+    class_level_id: "",
   });
   const [assignmentType, setAssignmentType] = useState("single");
   const [editingHomeworkId, setEditingHomeworkId] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Fetch teachers from the backend
+  // Fetch all necessary data in one useEffect
   useEffect(() => {
-    const fetchTeachers = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem("token");
-      try {
-        const response = await axios.get(
-          "http://127.0.0.1:8000/teachers/names/",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setTeachers(response.data);
-      } catch (error) {
-        console.error("Error fetching teachers:", error);
-        setErrorMessage("Failed to fetch teacher data.");
-      }
-    };
-    fetchTeachers();
-  }, []);
 
-  // Fetch årskurs from the backend
-  useEffect(() => {
-    const fetchArskurs = async () => {
-      const token = localStorage.getItem("token");
       try {
-        const response = await axios.get("http://127.0.0.1:8000/arskurs/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setArskursList(response.data);
-      } catch (error) {
-        console.error("Error fetching årskurs:", error);
-        setErrorMessage("Failed to fetch årskurs data.");
-      }
-    };
-    fetchArskurs();
-  }, []);
+        const [
+          teachersResponse,
+          subjectsResponse,
+          classLevelsResponse,
+          homeworksResponse,
+        ] = await Promise.all([
+          axios.get("http://127.0.0.1:8000/teachers", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("http://127.0.0.1:8000/subjects", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("http://127.0.0.1:8000/class_levels", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("http://localhost:8000/homeworks", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-  // Fetch homework from the backend
-  useEffect(() => {
-    const fetchHomeworks = async () => {
-      const token = localStorage.getItem("token");
-      try {
-        const response = await axios.get("http://localhost:8000/homeworks/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setHomeworks(response.data);
+        setTeachers(teachersResponse.data);
+        setSubjects(subjectsResponse.data);
+        setClassLevels(classLevelsResponse.data);
+        setHomeworks(homeworksResponse.data);
       } catch (error) {
-        console.error("Error fetching homeworks:", error);
-        setErrorMessage("Failed to fetch homework data.");
+        console.error("Error fetching data:", error);
+        setErrorMessage("Failed to fetch data.");
       }
     };
 
-    fetchHomeworks();
-  }, []);
-  // Fetch subjects from the backend
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      const token = localStorage.getItem("token");
-      try {
-        const response = await axios.get("http://127.0.0.1:8000/subjects/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setSubjects(response.data); // Set the fetched subjects in state
-      } catch (error) {
-        console.error("Error fetching subjects:", error);
-        setErrorMessage("Failed to fetch subjects.");
-      }
-    };
-    fetchSubjects();
+    fetchData();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -111,8 +70,8 @@ const ManageHomework = () => {
       !homeworkData.description ||
       !homeworkData.due_date ||
       !homeworkData.subject_id ||
-      (assignmentType === "single" && !homeworkData.user_id) || // Validate user_id only for single assignment
-      (assignmentType === "all" && !homeworkData.arskurs_id) // Validate arskurs_id only for all årskurs
+      (assignmentType === "single" && !homeworkData.user_id) ||
+      (assignmentType === "all" && !homeworkData.class_level_id)
     ) {
       setErrorMessage("All fields are required.");
       return;
@@ -120,8 +79,6 @@ const ManageHomework = () => {
 
     try {
       const token = localStorage.getItem("token");
-
-      // Prepare the payload based on assignment type
       const payload = {
         title: homeworkData.title,
         description: homeworkData.description,
@@ -130,23 +87,19 @@ const ManageHomework = () => {
         priority: homeworkData.priority,
         subject_id: homeworkData.subject_id,
         teacher_id: homeworkData.teacher_id,
-        ...(assignmentType === "single" && { user_id: homeworkData.user_id }), // Include user_id only if single
+        ...(assignmentType === "single" && { user_id: homeworkData.user_id }), // For single assignment
         ...(assignmentType === "all" && {
-          arskurs_id: homeworkData.arskurs_id,
-        }), // Include arskurs_id only if all
+          class_level_id: homeworkData.class_level_id,
+        }), // For all class level
       };
 
-      console.log("Payload:", payload); // Debugging log
-
+      // Add or update homework
       if (editingHomeworkId) {
-        // Update homework
         const response = await axios.put(
           `http://localhost:8000/homeworks/${editingHomeworkId}/`,
           payload,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
         setHomeworks((prevHomeworks) =>
@@ -156,14 +109,11 @@ const ManageHomework = () => {
         );
         setSuccessMessage("Homework updated successfully!");
       } else {
-        // Add new homework
         const response = await axios.post(
           "http://localhost:8000/homeworks/",
           payload,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
         setHomeworks((prevHomeworks) => [...prevHomeworks, response.data]);
@@ -171,7 +121,6 @@ const ManageHomework = () => {
       }
 
       // Reset form and state
-      setErrorMessage("");
       setHomeworkData({
         title: "",
         description: "",
@@ -181,47 +130,35 @@ const ManageHomework = () => {
         user_id: "",
         subject_id: "",
         teacher_id: "",
-        arskurs_id: "",
+        class_level_id: "",
       });
       setEditingHomeworkId(null);
+      setErrorMessage(""); // Clear error message
     } catch (error) {
-      console.error(
-        "Error managing homework:",
-        error.response?.data || error.message
-      );
-      if (error.response?.data) {
-        setErrorMessage(`Error: ${JSON.stringify(error.response.data)}`);
-      } else {
-        setErrorMessage("Failed to manage homework. Please try again.");
-      }
-      setSuccessMessage("");
+      console.error("Error managing homework:", error);
+      setErrorMessage("Failed to manage homework. Please try again.");
+      setSuccessMessage(""); // Clear success message
     }
   };
-  // Delete homework
+
   const handleDelete = async (homeworkId) => {
-    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+    const token = localStorage.getItem("token");
     try {
       await axios.delete(`http://localhost:8000/homeworks/${homeworkId}/`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // Include the token
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setHomeworks((prevHomeworks) =>
         prevHomeworks.filter((homework) => homework.id !== homeworkId)
       );
       setSuccessMessage("Homework deleted successfully!");
-      setErrorMessage("");
+      setErrorMessage(""); // Clear error message
     } catch (error) {
-      console.error(
-        "Error deleting homework:",
-        error.response?.data || error.message
-      );
+      console.error("Error deleting homework:", error);
       setErrorMessage("Failed to delete homework. Please try again.");
-      setSuccessMessage("");
+      setSuccessMessage(""); // Clear success message
     }
   };
 
-  // Start editing homework
   const handleEdit = (homework) => {
     setHomeworkData({
       title: homework.title,
@@ -232,9 +169,9 @@ const ManageHomework = () => {
       user_id: homework.user_id,
       subject_id: homework.subject_id,
       teacher_id: homework.teacher_id,
-      arskurs_id: homework.arskurs_id,
+      class_level_id: homework.class_level_id,
     });
-    setEditingHomeworkId(homework.id); // Ensure this is set correctly
+    setEditingHomeworkId(homework.id);
   };
 
   const handleChange = (e) => {
@@ -246,258 +183,234 @@ const ManageHomework = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto bg-white p-8 border rounded-lg shadow-md mt-10">
-      <h1 className="text-2xl font-bold mb-6">Manage Homework</h1>
-      <form onSubmit={handleSubmit}>
-        {/* Assignment Type Toggle */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Assign To
-          </label>
-          <div className="flex items-center space-x-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="assignmentType"
-                value="single"
-                checked={assignmentType === "single"}
-                onChange={() => setAssignmentType("single")}
-                className="mr-2"
-              />
-              Single Student
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="assignmentType"
-                value="all"
-                checked={assignmentType === "all"}
-                onChange={() => setAssignmentType("all")}
-                className="mr-2"
-              />
-              All Årskurs
-            </label>
+    <div className="container mx-auto px-6 py-10">
+      <h1 className="text-4xl font-extrabold text-gray-800 mb-8 text-center tracking-wide leading-tight">
+        HomeWork Dashboard
+      </h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
+        {/* Student Section */}
+        <div className="bg-white p-6 rounded-lg shadow-xl border border-blue-200">
+          <h2 className="text-2xl font-semibold text-blue-700 mb-6">
+            Homework for one student
+          </h2>
+
+          <div className="space-y-4">
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Add Homework
+            </button>
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Get all Homework
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Get Homework by class Level
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Get homework by Teacher
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Update a Homework
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-red-600 text-white rounded-md hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Delete a Homework
+            </button>
           </div>
         </div>
 
-        {/* Conditionally Render Fields */}
-        {assignmentType === "single" && (
-          <div className="mb-4">
-            <label
-              htmlFor="user_id"
-              className="block text-gray-700 font-semibold"
+        {/* Parents Section */}
+        <div className="bg-white p-6 rounded-lg shadow-xl border border-blue-200">
+          <h2 className="text-2xl font-semibold text-blue-700 mb-6">
+            Homework for Class Level
+          </h2>
+
+          <div className="space-y-4">
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
             >
-              Student ID
-            </label>
-            <input
-              type="number"
-              id="user_id"
-              name="user_id"
-              value={homeworkData.user_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter Student ID"
-            />
+              Add Homework
+            </button>
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Get all Homework
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Get Homeworks by class Level
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Get Homeworks by Teacher
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Update a Homework
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-red-600 text-white rounded-md hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            >
+              Delete a Homework
+            </button>
           </div>
-        )}
+        </div>
 
-        {assignmentType === "all" && (
-          <div className="mb-4">
-            <label
-              htmlFor="arskurs_id"
-              className="block text-gray-700 font-semibold"
+        {/* Teachers Section */}
+        <div className="bg-white p-6 rounded-lg shadow-xl border border-blue-200">
+          <h2 className="text-2xl font-semibold text-blue-700 mb-6">
+            Homeworks
+          </h2>
+
+          <div className="space-y-4">
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
+            ></button>
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
             >
-              Årskurs
-            </label>
-            <select
-              id="arskurs_id"
-              name="arskurs_id"
-              value={homeworkData.arskurs_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              Get all Homeworks by Subject
+            </button>
+
+            <button
+              onClick={() => {}}
+              className="w-full py-3 px-6 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition transform hover:scale-105 duration-300"
             >
-              <option value="">Select Årskurs</option>
-              {arskursList.map((arskurs) => (
-                <option key={arskurs.id} value={arskurs.id}>
-                  {arskurs.name}
-                </option>
-              ))}
-            </select>
+              Get Teachers by Student Name
+            </button>
           </div>
-        )}
+        </div>
+      </div>
+      {/* New Container with Form */}
 
-        {/* Other Form Fields */}
-        <div className="mb-4">
-          <label
-            htmlFor="subject_id"
-            className="block text-gray-700 font-semibold"
-          >
-            Subject
-          </label>
-          <select
-            id="subject_id"
-            name="subject_id"
-            value={homeworkData.subject_id}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select a subject</option>
-            {subjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-4">
-          <label htmlFor="title" className="block text-gray-700 font-semibold">
-            Title
-          </label>
-          <input
-            type="text"
-            id="title"
-            name="title"
-            value={homeworkData.title}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter title"
-          />
-        </div>
-        <div className="mb-4">
-          <label
-            htmlFor="description"
-            className="block text-gray-700 font-semibold"
-          >
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={homeworkData.description}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter description"
-          />
-        </div>
-        <div className="mb-4">
-          <label
-            htmlFor="due_date"
-            className="block text-gray-700 font-semibold"
-          >
-            Due Date
-          </label>
-          <input
-            type="date"
-            id="due_date"
-            name="due_date"
-            value={homeworkData.due_date}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="status" className="block text-gray-700 font-semibold">
-            Status
-          </label>
-          <select
-            id="status"
-            name="status"
-            value={homeworkData.status}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="Pending">Pending</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
-        <div className="mb-4">
-          <label
-            htmlFor="priority"
-            className="block text-gray-700 font-semibold"
-          >
-            Priority
-          </label>
-          <select
-            id="priority"
-            name="priority"
-            value={homeworkData.priority}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="Normal">Normal</option>
-            <option value="High">High</option>
-            <option value="Low">Low</option>
-          </select>
-        </div>
-
-        <div className="mb-4">
-          <label
-            htmlFor="teacher_id"
-            className="block text-gray-700 font-semibold"
-          >
-            Teacher
-          </label>
-          <select
-            id="teacher_id"
-            name="teacher_id"
-            value={homeworkData.teacher_id}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select a teacher</option>
-            {teachers.map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>
-                {teacher.first_name} {teacher.last_name}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="bg-white p-8 rounded-lg shadow-xl border border-gray-200">
+        <h2 className="text-3xl font-semibold text-gray-700 mb-6">
+          Show Homework
+        </h2>
 
         {/* Error and success messages */}
-        {errorMessage && (
-          <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
-        )}
-        {successMessage && (
-          <p className="text-green-500 text-sm mb-4">{successMessage}</p>
-        )}
+        <form onSubmit={handleSubmit}>
+          {errorMessage && (
+            <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
+          )}
+          {successMessage && (
+            <p className="text-green-500 text-sm mb-4">{successMessage}</p>
+          )}
+        </form>
 
-        {/* Submit button */}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-all"
-        >
-          {editingHomeworkId ? "Update Homework" : "Add Homework"}
-        </button>
-      </form>
+        <h2 className="text-2xl font-bold mt-8 mb-6">Existing Homework</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-300 rounded-lg">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Title
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Description
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Due Date
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Status
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Teacher
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Subject
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Class Level
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Grade
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Student Name
+                </th>
+                <th className="py-3 px-6 border-b text-left text-gray-700 font-semibold">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {homeworks.map((homework) => (
+                <tr key={homework.id} className="hover:bg-gray-100">
+                  <td className="py-3 px-6 border-b">
+                    {homework.user?.first_name} {homework.user?.last_name}
+                  </td>
+                  <td className="py-3 px-6 border-b">{homework.title}</td>
+                  <td className="py-3 px-6 border-b">{homework.description}</td>
+                  <td className="py-3 px-6 border-b">{homework.due_date}</td>
+                  <td className="py-3 px-6 border-b">{homework.status}</td>
+                  <td className="py-3 px-6 border-b">
+                    {homework.teacher_name}
+                  </td>
+                  <td className="py-3 px-6 border-b">
+                    {homework.subject_name}
+                  </td>
+                  <td className="py-3 px-6 border-b">
+                    {homework.class_level_name}
+                  </td>
+                  <td className="py-3 px-6 border-b">{homework.grade}</td>
 
-      <h2 className="text-xl font-bold mt-8 mb-4">Existing Homework</h2>
-      <ul className="space-y-4">
-        {homeworks.map((homework) => (
-          <li
-            key={homework.id}
-            className="flex justify-between items-center bg-gray-100 p-4 rounded-md"
-          >
-            <span>
-              {homework.title} (Due: {homework.due_date})
-            </span>
-            <div className="space-x-2">
-              <button
-                onClick={() => handleEdit(homework)}
-                className="text-blue-500 hover:text-blue-700"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(homework.id)}
-                className="text-red-500 hover:text-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+                  <td className="py-3 px-6 border-b">
+                    <button
+                      onClick={() => handleEdit(homework)}
+                      className="text-blue-500 hover:text-blue-700 mr-4"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(homework.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

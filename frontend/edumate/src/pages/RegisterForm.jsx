@@ -12,19 +12,24 @@ const RegisterForm = () => {
     phone_number: "",
     password: "",
     confirmPassword: "",
-    role_id: "", // Added role_id
-    address: "", // Added address
-    postal_code: "", // Added postal_code
-    city: "", // Added city
-    country: "", // Added country
+    role_id: "",
+    address: "",
+    postal_code: "",
+    city: "",
+    country: "",
   });
 
   // Create a state for any error messages
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Add a state for the form key
+  const [formKey, setFormKey] = useState(0); // Initialize formKey state
 
   // Handle form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log(`Field: ${name}, Value: ${value}`); // Debugging log
     setFormData({
       ...formData,
       [name]: value,
@@ -37,22 +42,23 @@ const RegisterForm = () => {
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
     } else {
-      // Prepare data to send to the backend
       const data = {
         username:
           formData.first_name.substring(0, 3) +
-          formData.last_name.substring(0, 3), // Generate username
+          formData.last_name.substring(0, 3),
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
         password: formData.password,
         phone_number: formData.phone_number,
-        role_id: formData.role_id, // Include role_id
-        address: formData.address, // Include address
-        postal_code: formData.postal_code, // Include postal_code
-        city: formData.city, // Include city
-        country: formData.country, // Include country
+        role_id: formData.role_id, // Ensure role_id is included
+        address: formData.address,
+        postal_code: formData.postal_code,
+        city: formData.city,
+        country: formData.country,
       };
+
+      console.log("Data sent to backend:", data); // Debugging log
 
       const options = {
         headers: { "Content-Type": "application/json" },
@@ -68,6 +74,20 @@ const RegisterForm = () => {
           throw new Error(errorData.detail || "Failed to create user.");
         }
         alert("User created!");
+        setFormData({
+          first_name: "",
+          last_name: "",
+          email: "",
+          phone_number: "",
+          password: "",
+          confirmPassword: "",
+          role_id: "",
+          address: "",
+          postal_code: "",
+          city: "",
+          country: "",
+        });
+        setFormKey((prevKey) => prevKey + 1);
         navigate("/login");
       } catch (error) {
         console.error("Error creating user:", error.message);
@@ -78,14 +98,15 @@ const RegisterForm = () => {
 
   return (
     <main className="container mx-auto px-6 py-10">
-      <div className="max-w-lg mx-auto bg-white p-8 border rounded-lg shadow-md">
+      <div className="max-w-3xl mx-auto bg-white p-8 border rounded-lg shadow-md">
         <h2 className="text-3xl font-semibold text-center mb-6">
           Create an Account
         </h2>
         {error && <div className="text-red-500 text-center mb-4">{error}</div>}
-        <form onSubmit={handleSubmit}>
+
+        <form key={formKey} onSubmit={handleSubmit} className="space-y-6">
           {/* First Name */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="first_name"
               className="block text-gray-700 font-semibold"
@@ -104,7 +125,7 @@ const RegisterForm = () => {
           </div>
 
           {/* Last Name */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="last_name"
               className="block text-gray-700 font-semibold"
@@ -123,7 +144,7 @@ const RegisterForm = () => {
           </div>
 
           {/* Email */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="email"
               className="block text-gray-700 font-semibold"
@@ -137,12 +158,13 @@ const RegisterForm = () => {
               value={formData.email}
               onChange={handleChange}
               required
+              autoComplete="new-email" // Use 'new-email' to prevent autofill for email
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
           </div>
 
           {/* Phone Number */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="phone_number"
               className="block text-gray-700 font-semibold"
@@ -161,7 +183,7 @@ const RegisterForm = () => {
           </div>
 
           {/* Password */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="password"
               className="block text-gray-700 font-semibold"
@@ -169,18 +191,30 @@ const RegisterForm = () => {
               Password
             </label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               id="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
               required
+              autoComplete="new-password" // Use 'new-password' to disable autofill for password
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
+            <div className="mt-2">
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={() => setShowPassword(!showPassword)} // Toggle showPassword state
+                  className="form-checkbox h-4 w-4 text-yellow-500"
+                />
+                <span className="ml-2 text-gray-700">Show Password</span>
+              </label>
+            </div>
           </div>
 
           {/* Confirm Password */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="confirmPassword"
               className="block text-gray-700 font-semibold"
@@ -199,7 +233,7 @@ const RegisterForm = () => {
           </div>
 
           {/* Role */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="role_id"
               className="block text-gray-700 font-semibold"
@@ -222,7 +256,7 @@ const RegisterForm = () => {
           </div>
 
           {/* Address */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="address"
               className="block text-gray-700 font-semibold"
@@ -240,7 +274,7 @@ const RegisterForm = () => {
           </div>
 
           {/* Postal Code */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="postal_code"
               className="block text-gray-700 font-semibold"
@@ -258,7 +292,7 @@ const RegisterForm = () => {
           </div>
 
           {/* City */}
-          <div className="mb-4">
+          <div>
             <label htmlFor="city" className="block text-gray-700 font-semibold">
               City
             </label>
@@ -273,7 +307,7 @@ const RegisterForm = () => {
           </div>
 
           {/* Country */}
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="country"
               className="block text-gray-700 font-semibold"

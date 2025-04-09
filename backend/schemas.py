@@ -25,16 +25,16 @@ class UserBase(BaseModel):
         from_attributes = True 
 
 class UserIn(BaseModel):
-    username: str
+   
     first_name: str
     last_name: str
     email: str
-    password: str
+  
     phone_number: str
-    address: Optional[str] = None  # New field added to match User model
-    postal_code: Optional[str] = None  # New field added to match User model
-    city: Optional[str] = None  # New field added to match User model
-    country: Optional[str] = None  # New field added to match User model
+    address: Optional[str] = None  
+    postal_code: Optional[str] = None  
+    city: Optional[str] = None  
+    country: Optional[str] = None 
 class UserOut(UserBase):
     id: int
     role_id: Optional[int] = None  # Optional field for role_id
@@ -144,7 +144,7 @@ class StudentUpdate(BaseModel):
 class StudentOut(StudentBase):
     id: int
     class_level_id: Optional[int] = None   
-    user_id: Optional[int] = None  # Nested UserOut model    
+    user: Optional["UserIn"] = None    
     class Config:
         from_attributes = True 
 class TeacherBase(BaseModel):
@@ -159,7 +159,12 @@ class TeacherBase(BaseModel):
 
 class TeacherCreate(TeacherBase):
     pass
-
+class TeacherOut(TeacherBase):
+    id: int
+    class_level_id: Optional[int] = None   
+    user: Optional["UserIn"] = None    
+    class Config:
+        from_attributes = True 
 class TeacherUpdate(BaseModel):
     qualifications: Optional[str] = None
     photo: Optional[str] = None
@@ -212,14 +217,20 @@ class HomeworkCreate(BaseModel):
     priority: Optional[str] = "Normal"
     status: Optional[str] = "Pending"
     subject_class_level_id: int        
-
+class HomeworkBase(BaseModel):
+    title: str
+    description: str
+    due_date: date
+    priority: Optional[str] = "Normal"
+    status: Optional[str] = "Pending"
+    subject_class_level_id: int       
 class HomeworkUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     due_date: Optional[date] = None
     priority: Optional[str] = None
     status: Optional[str] = None
-class HomeworkOut(BaseModel):
+class HomeworkOut(HomeworkBase):
     id: int
     title: str
     description: str
@@ -227,6 +238,7 @@ class HomeworkOut(BaseModel):
     priority: str
     status: str
     subject_class_level_id: int
+    user: Optional["UserIn"] = None  
 
     class Config:
         from_attributes = True    
@@ -335,3 +347,19 @@ class RecommendedResourceUpdate(BaseModel):
     title: Optional[str] = None
     url: Optional[str] = None
     description: Optional[str] = None                      
+
+class StudentHomeworkBase(BaseModel):
+    id: int
+    student_id: int
+    homework_id: int
+    file_attachement_id: Optional[int] = None
+    class Config:
+        from_attributes = True  
+class StudentHomeworkCreate(BaseModel):
+    student_id: int
+    homework_id: int
+    file_attachement_id: Optional[int] = None   
+class StudentHomeworkCreate(BaseModel):
+    student_id: int
+    homework_id: int
+    file_attachement_id: Optional[int] = None         

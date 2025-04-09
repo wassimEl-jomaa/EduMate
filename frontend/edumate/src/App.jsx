@@ -36,6 +36,10 @@ const App = () => {
   const [signedIn, setSignedIn] = useState(user_token ? true : false);
   const [userId, setUserId] = useState(message && message[0] ? message[0] : "");
   const [role, setRole] = useState(message && message[1] ? message[1] : "");
+  const teacherId = message && message[2] ? message[2] : "";
+
+  console.log("userId:", userId);
+  console.log("teacherId:", teacherId);
 
   return (
     <div className="bg-gray-100">
@@ -77,15 +81,15 @@ const App = () => {
         <Route path="/manage-subjects" element={<ManageSubjects />} />
         <Route path="/manage-meddelanden" element={<ManageMeddelanden />} />
         <Route path="/manage-homework" element={<ManageHomework />} />
-        <Route path="/teacher" element={<Teachers userId={userId} />} />
-        <Route path="/manage-teachers" element={<ManageTeachers />} />{" "}
-        {/* Add this route */}
-        {/* Add this route */}
+        <Route
+          path="/teacher"
+          element={<Teachers teacherId={teacherId} userId={userId} />}
+        />
+        <Route path="/manage-teachers" element={<ManageTeachers />} />
         <Route
           path="/meddelande"
           element={<MeddelandePage userId={userId} />}
         />
-        {/* Conditional Route for Betyg */}
         <Route
           path="/betyg"
           element={

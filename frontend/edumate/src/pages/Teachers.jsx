@@ -2,120 +2,96 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const Teachers = () => {
-  const [teacher, setTeacher] = useState(null); // State to store teacher's information
-  const navigate = useNavigate(); // Initialize the navigate function
+const Teachers = ({ userId }) => {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate(); // Initialize navigate
 
-  // Fetch teacher data from the backend
+  // Fetch user data
   useEffect(() => {
-    const fetchTeacher = async () => {
-      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+    const token = localStorage.getItem("token");
+    console.log("Fetching user data for userId:", userId);
+
+    const fetchUserData = async () => {
       try {
-        const response = await axios.get("http://127.0.0.1:8000/teachers/me/", {
-          headers: {
-            Authorization: `Bearer ${token}`, // Include the token
-          },
-        });
-        console.log("Fetched teacher data:", response.data); // Debug log
-        setTeacher(response.data); // Set the fetched teacher data in state
+        const response = await axios.get(
+          `http://localhost:8000/users/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log("Fetched user data:", response.data);
+        setUser(response.data);
       } catch (error) {
         console.error(
-          "Error fetching teacher data:",
+          "Error fetching user data:",
           error.response?.data || error.message
         );
       }
     };
 
-    fetchTeacher();
-  }, []);
+    if (userId) {
+      fetchUserData();
+    }
+  }, [userId]);
 
-  const handleAddHomework = () => {
-    navigate("/manage-homework"); // Navigate to the ManageHomework page
-  };
-
-  const handleAddBetyg = () => {
-    navigate("/betyg"); // Navigate to the ManageBetyg page
-  };
-
-  const handleAddMeddelanden = () => {
-    navigate("/manage-meddelanden"); // Navigate to the ManageMeddelanden page
-  };
-
-  const handleAddRecommendedResource = () => {
-    navigate("/manage-recommended-resource"); // Navigate to the ManageRecommendedResource page
-  };
-
-  const handleAddFiluppladdning = () => {
-    navigate("/manage-filuppladdning"); // Navigate to the ManageFiluppladdning page
-  };
+  if (!user) {
+    return <p>Loading...</p>;
+  }
 
   return (
-    <div className="container mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold mb-6">Teacher Dashboard</h1>
+    <div className="container mx-auto px-6 py-12">
+      <h1 className="text-4xl font-extrabold text-gray-800 mb-8">
+        Teacher Dashboard
+      </h1>
 
       {/* Display the teacher's name */}
-      {teacher ? (
-        <p className="text-lg mb-6">
-          Welcome,{" "}
-          <span className="font-semibold">
-            {teacher.user.first_name} {teacher.user.last_name}
-          </span>
-          !
-        </p>
-      ) : (
-        <p className="text-lg mb-6">Loading teacher information...</p>
-      )}
+      <p className="text-lg text-gray-600 mb-8">
+        Welcome,{" "}
+        <span className="font-semibold text-gray-800">
+          {user.first_name} {user.last_name}
+        </span>
+        !
+      </p>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-blue-100 p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">Manage Homework</h2>
+      <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Manage Homework Card */}
+        <div className="bg-blue-50 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+            Manage Homework
+          </h2>
           <button
-            onClick={handleAddHomework}
-            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+            onClick={() => navigate("/manage-homework")}
+            className="bg-blue-600 text-white text-lg font-semibold px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             Add Homework
           </button>
         </div>
 
-        <div className="bg-green-100 p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">Manage Betyg</h2>
+        {/* Manage Betyg Card */}
+        <div className="bg-green-50 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+            Manage Betyg
+          </h2>
           <button
-            onClick={handleAddBetyg}
-            className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+            onClick={() => navigate("/betyg")}
+            className="bg-green-600 text-white text-lg font-semibold px-6 py-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             Add Betyg
           </button>
         </div>
 
-        <div className="bg-yellow-100 p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">Manage Meddelanden</h2>
-          <button
-            onClick={handleAddMeddelanden}
-            className="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600"
-          >
-            Add Meddelanden
-          </button>
-        </div>
-
-        <div className="bg-purple-100 p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">
-            Manage Recommended Resources
+        {/* Manage Meddelanden Card */}
+        <div className="bg-yellow-50 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+            Manage Meddelanden
           </h2>
           <button
-            onClick={handleAddRecommendedResource}
-            className="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600"
+            onClick={() => navigate("/manage-meddelanden")}
+            className="bg-yellow-600 text-white text-lg font-semibold px-6 py-3 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500"
           >
-            Add Recommended Resource
-          </button>
-        </div>
-
-        <div className="bg-red-100 p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">Manage Filuppladdning</h2>
-          <button
-            onClick={handleAddFiluppladdning}
-            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-          >
-            Add Filuppladdning
+            Add Meddelanden
           </button>
         </div>
       </div>
