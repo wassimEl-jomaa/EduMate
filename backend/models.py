@@ -49,7 +49,7 @@ class Student_Homework(Base):
     homework_id = Column(Integer, ForeignKey("homework.id", ondelete="CASCADE"))
     file_attachement_id = Column(Integer, ForeignKey("file_attachment.id", ondelete="CASCADE"))
 
-    student = relationship("Student", back_populates="student_homework")
+    student = relationship("Student", back_populates="student_homework")  # Use back_populates
     homework = relationship("Homework", back_populates="student_homework")
     file_attachment = relationship("File_Attachment", back_populates="student_homework")  # Use back_populates
     grade = relationship("Grade", back_populates="student_homework")  # Use back_populates
@@ -106,8 +106,8 @@ class Student(Base):
     # Relationships
     user = relationship("User", back_populates="student")  # One-to-one relationship with User
     class_level = relationship("Class_Level", back_populates="student")  # Many-to-one relationship with Arskurs
-    homework = relationship("Homework", secondary="student_homework", back_populates="student")  # Many-to-one relationship with Arskurs
-    student_homework = relationship("Student_Homework", back_populates="student")  # Many-to-one relationship with Arskurs
+    homework = relationship("Homework", secondary="student_homework", back_populates="student", overlaps="student, homework")  # Many-to-one relationship with Arskurs
+    student_homework = relationship("Student_Homework", back_populates="student", overlaps="homework, student")  # Many-to-one relationship with Arskurs
     guardian = relationship("Guardian", back_populates="student")  # Many-to-one relationship with Guardian
 
 class Parent(Base):
@@ -152,10 +152,10 @@ class Homework(Base):
 
     # Direct reference to Teacher table
     subject_class_level = relationship("Subject_Class_Level", back_populates="homework")  # Use back_populates
-    student = relationship("Student", secondary="student_homework", back_populates="homework")  # Use back_populates
+    student = relationship("Student", secondary="student_homework", back_populates="homework", overlaps="student_homework, homework")  # Use back_populates
 
     file_attachment = relationship("File_Attachment", back_populates="homework", uselist=False)
-    student_homework = relationship("Student_Homework", back_populates="homework")  # Use back_populates
+    student_homework = relationship("Student_Homework", back_populates="homework", overlaps="homework,student")  # Use back_populates
 
 class Subject(Base):
     __tablename__ = "subject"

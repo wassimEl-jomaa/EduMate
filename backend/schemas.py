@@ -24,17 +24,8 @@ class UserBase(BaseModel):
     class Config:
         from_attributes = True 
 
-class UserIn(BaseModel):
-   
-    first_name: str
-    last_name: str
-    email: str
-  
-    phone_number: str
-    address: Optional[str] = None  
-    postal_code: Optional[str] = None  
-    city: Optional[str] = None  
-    country: Optional[str] = None 
+
+
 class UserOut(UserBase):
     id: int
     role_id: Optional[int] = None  # Optional field for role_id
@@ -396,3 +387,21 @@ class StudentHomeworkCreate(BaseModel):
     student_id: int
     homework_id: int
     file_attachement_id: Optional[int] = None         
+
+
+class UserIn(BaseModel):
+
+    first_name: str
+    last_name: str
+    email: str
+    username: str
+    password: str
+    phone_number: str
+    address: Optional[str] = None  
+    postal_code: Optional[str] = None  
+    city: Optional[str] = None  
+    country: Optional[str] = None 
+    role_id: Optional[int] = None  # Optional field for role_id
+    teacher: Optional["TeacherUpdate"] = None  # Optional field for TeacherIn
+    student: Optional["StudentUpdate"] = None  # Optional field for StudentIn
+    parent: Optional["ParentUpdate"] = None  # Optional field for ParentIn

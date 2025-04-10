@@ -9,7 +9,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 from db_setup import get_db, create_databases
-from models import  User, Token
+from models import  Message, User, Token
 from auth import create_database_token, generate_token, get_current_user, get_password_hash, token_expiry
 from passlib.context import CryptContext
 from db_setup import get_db
@@ -149,9 +149,34 @@ def add_users(
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Query the Role model
-    role_instance = database.query(Role).filter(Role.id == 1).first()
+    role_instance = database.query(Role).filter(Role.id == user_params.role_id).first()
     if not role_instance:
         raise HTTPException(status_code=404, detail="Role not found")
+
+    if role_instance.name == "Teacher":
+        teacher = Teacher(
+            user_id=user_params.id,
+            subject_id=user_params.teacher.subject_id,
+            qualifications=user_params.teacher.qualifications,
+            photo=user_params.teacher.photo,
+            employment_date=user_params.teacher.employment_date
+        )
+        database.add(teacher)
+        database.commit()
+    elif role_instance.name == "Student":
+        student = Student(
+            user_id=user_params.id,
+            class_level_id=user_params.student.class_level_id,
+            date_of_birth=user_params.student.date_of_birth
+        )
+        database.add(student)
+        database.commit()
+    elif role_instance.name == "Parent":
+        parent = Parent(
+            user_id=user_params.id
+        )
+        database.add(parent)
+        database.commit()
 
     # Hash the password before saving
     hashed_password = get_password_hash(user_params.password)
@@ -638,7 +663,7 @@ def get_all_students(
     return students
 
 # Get student by ID with token validation and user authentication
-@app.get("/students/{student_id}", response_model=StudentBase)
+@app.get("/students/{student_id}", response_model=StudentOut)
 def get_student(student_id: int, 
                 current_user: User = Depends(get_current_user),  # Token validation and user authentication
                 database: Session = Depends(get_db)):
@@ -659,6 +684,26 @@ def get_student(student_id: int,
     # Return the student details
     return student
 
+@app.get("/students/class_level/{class_level_id}", response_model=List[StudentOut])
+def get_students_by_class_level(
+    class_level_id: int,
+    current_user: User = Depends(get_current_user),  # Token validation and user authentication
+    db: Session = Depends(get_db)
+):
+    """
+    Get all students from the same class level.
+    """
+    # Ensure the user is authenticated
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Fetch students from the specified class level
+    students = db.query(Student).filter(Student.class_level_id == class_level_id).options(joinedload(Student.user)).all()
+
+    if not students:
+        raise HTTPException(status_code=404, detail="No students found for the specified class level")
+
+    return students
 
 # Update a student
 @app.put("/students/{student_id}", response_model=StudentBase)
@@ -1049,6 +1094,7 @@ def add_homework(
     current_user: User = Depends(get_current_user),  # Token validation and user authentication
     db: Session = Depends(get_db)
 ):
+    
     """
     Add a new homework to the database.
     """
@@ -1181,6 +1227,7 @@ def add_subject_class_level(
     return new_subject_class_level   
 @app.get("/subject_class_levels", response_model=List[SubjectClassLevelOut])
 def get_all_subject_class_levels(
+    user_id: int = None,  # Optional user ID to filter by user
     current_user: User = Depends(get_current_user),  # Token validation and user authentication
     db: Session = Depends(get_db)
 ):
@@ -1190,9 +1237,11 @@ def get_all_subject_class_levels(
     # Ensure the user is authenticated
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-
+    teacher = db.query(Teacher).filter(Teacher.user_id == user_id).first()
+    if not teacher:
+        raise HTTPException(status_code=403, detail="Not authorized to view subject class levels")
     # Fetch all Subject_Class_Level entries
-    subject_class_levels = db.query(Subject_Class_Level).all()
+    subject_class_levels = db.query(Subject_Class_Level).filter(teacher.id == Subject_Class_Level.teacher_id).all()
 
     return subject_class_levels     
 @app.put("/subject_class_levels/{subject_class_level_id}", response_model=SubjectClassLevelBase)
@@ -1727,106 +1776,6 @@ def delete_recommended_resource(
     db.commit()
 
     return {"message": f"Recommended_Resource with ID {resource_id} has been deleted successfully"} 
-@app.post("/student_homeworks", response_model=StudentHomeworkBase)
-def add_student_homework(
-    student_homework_data: StudentHomeworkCreate,
-    current_user: User = Depends(get_current_user),  # Token validation and user authentication
-    db: Session = Depends(get_db)
-):
-    """
-    Add a new Student_Homework to the database.
-    """
-    # Ensure the user has the necessary permissions (e.g., teacher)
-    if current_user.role.name != "Teacher":
-        raise HTTPException(status_code=403, detail="Not authorized to add student homework")
-
-    # Ensure the student and homework exist
-    student = db.query(Student).filter(Student.id == student_homework_data.student_id).first()
-    homework = db.query(Homework).filter(Homework.id == student_homework_data.homework_id).first()
-
-    if not student or not homework:
-        raise HTTPException(status_code=404, detail="Student or Homework not found")
-
-    # Create the new Student_Homework
-    new_student_homework = Student_Homework(
-        student_id=student_homework_data.student_id,
-        homework_id=student_homework_data.homework_id,
-        file_attachement_id=student_homework_data.file_attachement_id
-    )
-    db.add(new_student_homework)
-    db.commit()
-    db.refresh(new_student_homework)
-
-    return new_student_homework
-@app.get("/student_homeworks", response_model=List[StudentHomeworkBase])
-def get_all_student_homeworks(
-    current_user: User = Depends(get_current_user),  # Token validation and user authentication
-    db: Session = Depends(get_db)
-):
-    """
-    Get all Student_Homework entries from the database.
-    """
-    # Ensure the user is authenticated
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-    # Fetch all Student_Homework entries
-    student_homeworks = db.query(Student_Homework).all()
-
-    return student_homeworks
-@app.put("/student_homeworks/{student_homework_id}", response_model=StudentHomeworkBase)
-def update_student_homework(
-    student_homework_id: int,
-    student_homework_update: StudentHomeworkUpdate,
-    current_user: User = Depends(get_current_user),  # Token validation and user authentication
-    db: Session = Depends(get_db)
-):
-    """
-    Update a Student_Homework by ID.
-    """
-    # Ensure the user has the necessary permissions (e.g., teacher)
-    if current_user.role.name != "Teacher":
-        raise HTTPException(status_code=403, detail="Not authorized to update student homework")
-
-    # Fetch the Student_Homework entry
-    student_homework = db.query(Student_Homework).filter(Student_Homework.id == student_homework_id).first()
-    if not student_homework:
-        raise HTTPException(status_code=404, detail="Student_Homework not found")
-
-    # Update the fields
-    if student_homework_update.student_id:
-        student_homework.student_id = student_homework_update.student_id
-    if student_homework_update.homework_id:
-        student_homework.homework_id = student_homework_update.homework_id
-    if student_homework_update.file_attachement_id:
-        student_homework.file_attachement_id = student_homework_update.file_attachement_id
-
-    db.commit()
-    db.refresh(student_homework)
-
-    return student_homework
-@app.delete("/student_homeworks/{student_homework_id}")
-def delete_student_homework(
-    student_homework_id: int,
-    current_user: User = Depends(get_current_user),  # Token validation and user authentication
-    db: Session = Depends(get_db)
-):
-    """
-    Delete a Student_Homework by ID.
-    """
-    # Ensure the user has the necessary permissions (e.g., teacher)
-    if current_user.role.name != "Teacher":
-        raise HTTPException(status_code=403, detail="Not authorized to delete student homework")
-
-    # Fetch the Student_Homework entry
-    student_homework = db.query(Student_Homework).filter(Student_Homework.id == student_homework_id).first()
-    if not student_homework:
-        raise HTTPException(status_code=404, detail="Student_Homework not found")
-
-    # Delete the entry
-    db.delete(student_homework)
-    db.commit()
-
-    return {"message": f"Student_Homework with ID {student_homework_id} has been deleted successfully"}                                                                     
+                                                             
 if __name__ == '__main__':
     uvicorn.run(app)

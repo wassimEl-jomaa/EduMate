@@ -20,7 +20,9 @@ const ManageHomework = () => {
 
           <div className="space-y-4">
             <button
-              onClick={() => {}}
+              onClick={() => {
+                navigate("/add-homework");
+              }}
               className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
             >
               Add Homework

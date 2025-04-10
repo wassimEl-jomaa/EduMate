@@ -4,34 +4,94 @@ import axios from "axios";
 const ShowAllHomework = () => {
   const [studentHomeworks, setStudentHomeworks] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility state
+  const [editingHomework, setEditingHomework] = useState(null); // Homework being edited
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    due_date: "",
+    priority: "Normal",
+    status: "Pending",
+  });
 
+  const fetchStudentHomeworks = async () => {
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await axios.get(
+        "http://127.0.0.1:8000/student_homeworks",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setStudentHomeworks(response.data);
+    } catch (error) {
+      console.error("Error fetching student homeworks:", error);
+      setErrorMessage("Failed to fetch student homeworks.");
+    }
+  };
   useEffect(() => {
-    const fetchStudentHomeworks = async () => {
+    fetchStudentHomeworks();
+  }, []);
+
+  const handleEdit = (studentHomework) => {
+    // Populate the modal with the selected homework's data
+    setEditingHomework(studentHomework);
+    setFormData({
+      title: studentHomework.homework?.title || "",
+      description: studentHomework.homework?.description || "",
+      due_date: studentHomework.homework?.due_date || "",
+      priority: studentHomework.homework?.priority || "Normal",
+      status: studentHomework.homework?.status || "Pending",
+    });
+    setIsModalOpen(true); // Open the modal
+  };
+
+  const handleDelete = (id) => {
+    const delete_homework = async () => {
       const token = localStorage.getItem("token");
 
       try {
-        const response = await axios.get(
-          "http://127.0.0.1:8000/student_homeworks",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setStudentHomeworks(response.data);
+        await axios.delete(`http://127.0.0.1:8000/student_homeworks/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert(`Delete Student Homework ID`);
+        fetchStudentHomeworks();
       } catch (error) {
         console.error("Error fetching student homeworks:", error);
         setErrorMessage("Failed to fetch student homeworks.");
       }
     };
-
-    fetchStudentHomeworks();
-  }, []);
-
-  const handleEdit = (studentHomework) => {
-    alert(`Edit Student Homework ID: ${studentHomework.id}`);
+    delete_homework();
   };
 
-  const handleDelete = (id) => {
-    alert(`Delete Student Homework ID: ${id}`);
+  const handleModalSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+
+    try {
+      await axios.put(
+        `http://127.0.0.1:8000/homework/${editingHomework.homework.id}/`,
+        formData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setIsModalOpen(false); // Close the modal
+      setEditingHomework(null);
+      fetchStudentHomeworks(); // Refresh the list
+    } catch (error) {
+      console.error("Error updating homework:", error);
+      setErrorMessage("Failed to update homework.");
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
   return (
@@ -161,6 +221,124 @@ const ShowAllHomework = () => {
           </tbody>
         </table>
       </div>
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-1/2">
+            <h2 className="text-2xl font-bold mb-4">Edit Homework</h2>
+            <form onSubmit={handleModalSubmit}>
+              <div className="mb-4">
+                <label
+                  htmlFor="title"
+                  className="block text-gray-700 font-semibold mb-2"
+                >
+                  Title
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="description"
+                  className="block text-gray-700 font-semibold mb-2"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                ></textarea>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="due_date"
+                  className="block text-gray-700 font-semibold mb-2"
+                >
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  id="due_date"
+                  name="due_date"
+                  value={formData.due_date}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="priority"
+                  className="block text-gray-700 font-semibold mb-2"
+                >
+                  Priority
+                </label>
+                <select
+                  id="priority"
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="High">High</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="status"
+                  className="block text-gray-700 font-semibold mb-2"
+                >
+                  Status
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="In Progress">In Progress</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

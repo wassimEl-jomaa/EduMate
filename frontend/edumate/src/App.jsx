@@ -27,7 +27,7 @@ import Teachers from "./pages/Teachers";
 import ManageBetyg from "./pages/ManageBetyg";
 import ManageTeachers from "./pages/ManageTeacher";
 import ShowAllHomework from "./pages/Homework/ShowAllHomework";
-
+import AddHomeworkOneStudent from "./pages/Homework/AddHomeworkOneStudent";
 const App = () => {
   var message = null;
   const user_token = localStorage.getItem("token"); // Store the token in localStorage
@@ -83,6 +83,7 @@ const App = () => {
         <Route path="/manage-meddelanden" element={<ManageMeddelanden />} />
         <Route path="/manage-homework" element={<ManageHomework />} />
         <Route path="/" element={<ManageHomework />} />
+        <Route path="/add-homework" element={<AddHomeworkOneStudent />} />
         <Route path="/homeworks" element={<ShowAllHomework />} />
         <Route
           path="/teacher"

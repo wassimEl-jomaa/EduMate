@@ -13,14 +13,16 @@ const AddRole = () => {
     const fetchRoles = async () => {
       try {
         const token = localStorage.getItem("token"); // Retrieve the token from localStorage
-        const response = await axios.get("http://localhost:8000/roles/", {
+        const response = await axios.get("http://localhost:8000/roles", {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header
           },
         });
+        console.log("Fetched Roles:", response.data); // Debugging log
         setRoles(response.data);
       } catch (error) {
         console.error("Error fetching roles:", error.response || error);
+        setErrorMessage("Failed to fetch roles. Please try again.");
       }
     };
 
@@ -47,7 +49,7 @@ const AddRole = () => {
         // Update role
         const response = await axios.put(
           `http://localhost:8000/roles/${editingRoleId}/`,
-          { name: role_name },
+          { name: role_name }, // Use "name" instead of "role_name"
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -62,13 +64,12 @@ const AddRole = () => {
         setSuccessMessage(`Role "${response.data.name}" updated successfully!`);
       } else {
         // Add role
-        console.log("Submitting role data:", role_name); // Debug log
         const response = await axios.post(
           "http://localhost:8000/roles/",
-          { role_name: role_name }, // Send role_name in the request body
+          { name: role_name }, // Use "name" instead of "role_name"
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -82,7 +83,7 @@ const AddRole = () => {
     } catch (error) {
       console.error(
         "Error managing role:",
-        error.response?.data || error.message
+        error.response?.data?.detail || error.message
       );
       if (error.response?.status === 422) {
         setErrorMessage("Invalid role data. Please check your input.");
@@ -93,6 +94,14 @@ const AddRole = () => {
       }
       setSuccessMessage("");
     }
+  };
+
+  // Edit a role
+  const handleEdit = (role) => {
+    setEditingRoleId(role.id); // Set the ID of the role being edited
+    setRoleName(role.name); // Populate the role name in the input field
+    setErrorMessage(""); // Clear any error messages
+    setSuccessMessage(""); // Clear any success messages
   };
 
   // Delete a role
@@ -106,7 +115,7 @@ const AddRole = () => {
     try {
       await axios.delete(`http://localhost:8000/roles/${roleId}/`, {
         headers: {
-          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          Authorization: `Bearer ${token}`,
         },
       });
       setRoles((prevRoles) => prevRoles.filter((role) => role.id !== roleId));
@@ -115,7 +124,7 @@ const AddRole = () => {
     } catch (error) {
       console.error(
         "Error deleting role:",
-        error.response?.data || error.message
+        error.response?.data?.detail || error.message
       );
       if (error.response?.status === 403) {
         setErrorMessage("You do not have permission to delete roles.");
@@ -126,12 +135,6 @@ const AddRole = () => {
       }
       setSuccessMessage("");
     }
-  };
-
-  // Start editing a role
-  const handleEdit = (role) => {
-    setRoleName(role.name);
-    setEditingRoleId(role.id);
   };
 
   return (
