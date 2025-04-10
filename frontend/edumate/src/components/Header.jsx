@@ -29,13 +29,13 @@ export default function Header({ signedIn, setSignedIn, role }) {
               to="/"
               className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
             >
-              Hem
+              Home
             </Link>
             <Link
               to="/aboutUs"
               className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
             >
-              Om Oss
+              About Us
             </Link>
           </div>
         </div>
@@ -48,13 +48,13 @@ export default function Header({ signedIn, setSignedIn, role }) {
                 to="/login"
                 className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
-                Logga in
+                Sign in
               </Link>
               <Link
                 to="/register"
                 className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
-                Registrera
+                Register
               </Link>
             </div>
           ) : (
@@ -79,20 +79,20 @@ export default function Header({ signedIn, setSignedIn, role }) {
                 to="/Profil"
                 className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
-                Profil
+                Profile
               </Link>
               <Link
                 to="/MinSida"
                 className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
-                Min sida
+                My page
               </Link>
               <Link
                 to="/"
                 onClick={logout}
                 className="font-bold text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
               >
-                Logga ut
+                Sign out
               </Link>
             </div>
           )}
@@ -136,13 +136,13 @@ export default function Header({ signedIn, setSignedIn, role }) {
                   to="/login"
                   className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
                 >
-                  Logga in
+                  Sign in
                 </Link>
                 <Link
                   to="/register"
                   className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
                 >
-                  Registrera
+                  Register
                 </Link>
               </>
             ) : (
@@ -151,20 +151,20 @@ export default function Header({ signedIn, setSignedIn, role }) {
                   to="/Profil"
                   className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
                 >
-                  Profil
+                  Profile
                 </Link>
                 <Link
                   to="/MinSida"
                   className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
                 >
-                  Min sida
+                  My page
                 </Link>
                 <Link
                   to="/"
                   onClick={logout}
                   className="block text-xl text-white bg-blue-400 px-4 py-2 rounded hover:bg-blue-300 transition-all"
                 >
-                  Logga ut
+                  Sign out
                 </Link>
               </>
             )}

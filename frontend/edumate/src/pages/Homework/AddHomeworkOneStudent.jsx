@@ -17,7 +17,7 @@ const AddHomeworkOneStudent = () => {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchSubjectClassLevels = async () => {
       const token = localStorage.getItem("token");

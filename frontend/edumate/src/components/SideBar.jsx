@@ -15,7 +15,7 @@ const SideBar = () => {
                 to="/home"
                 className="block py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
               >
-                Profil
+                Profile
               </Link>
             </li>
             <li>
@@ -23,7 +23,7 @@ const SideBar = () => {
                 to="/betyg"
                 className="block py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
               >
-                Betyg
+                Grade
               </Link>
             </li>
 
@@ -40,7 +40,7 @@ const SideBar = () => {
                 to="/contact"
                 className="block py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
               >
-                Pågående Läxor
+                Ongoing Homework
               </Link>
             </li>
             <li>
@@ -48,7 +48,7 @@ const SideBar = () => {
                 to="/meddelande"
                 className="block py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
               >
-                Meddelande
+                Message
               </Link>
             </li>
             <li>
@@ -56,7 +56,7 @@ const SideBar = () => {
                 to="/contact"
                 className="block py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
               >
-                Rekommenderade Resurser
+                Recommended Resources
               </Link>
             </li>
             <li>
@@ -64,7 +64,7 @@ const SideBar = () => {
                 to="/contact"
                 className="block py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
               >
-                AI-genererade Förslag
+                AI-generated Suggestions
               </Link>
             </li>
             <li>
@@ -72,7 +72,7 @@ const SideBar = () => {
                 to="/about"
                 className="block py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
               >
-                Motiverande Innehåll
+                Motivational Content
               </Link>
             </li>
           </ul>

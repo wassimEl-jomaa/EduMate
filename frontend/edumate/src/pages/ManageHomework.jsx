@@ -1,142 +1,58 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+
+import { FaPlus, FaListUl } from "react-icons/fa";
 
 const ManageHomework = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="container mx-auto px-6 py-10">
-      <h1 className="text-4xl font-extrabold text-gray-800 mb-8 text-center tracking-wide leading-tight">
-        HomeWork Dashboard
+    <div className="container mx-auto px-4 sm:px-6 lg:px-10 py-10">
+      <h1 className="text-5xl font-extrabold text-gray-900 mb-12 text-center tracking-tight leading-snug">
+        📝 Homework Dashboard
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
-        {/* Student Section */}
-        <div className="bg-white p-6 rounded-lg shadow-xl border border-blue-200">
-          <h2 className="text-2xl font-semibold text-blue-700 mb-6">
-            Homework for one student
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        {/* Single Student Homework Card */}
+        <div className="bg-white p-8 rounded-2xl shadow-2xl border border-blue-100 hover:shadow-blue-200 transition-shadow duration-300">
+          <h2 className="text-2xl font-bold text-blue-700 mb-6">
+            📘 Student-Specific Homework
           </h2>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <button
-              onClick={() => {
-                navigate("/add-homework");
-              }}
-              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
+              onClick={() => navigate("/add-homework")}
+              className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-600 transition duration-300 shadow-md hover:shadow-lg"
             >
-              Add Homework
+              <FaPlus /> Add Homework
             </button>
             <button
               onClick={() => navigate("/homeworks")}
-              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
+              className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-600 transition duration-300 shadow-md hover:shadow-lg"
             >
-              Show All Homework
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Get Homework by class Level
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Get homework by Teacher
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Update a Homework
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-red-600 text-white rounded-md hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Delete a Homework
+              <FaListUl /> View / Update / Delete Homework
             </button>
           </div>
         </div>
 
-        {/* Parents Section */}
-        <div className="bg-white p-6 rounded-lg shadow-xl border border-blue-200">
-          <h2 className="text-2xl font-semibold text-blue-700 mb-6">
-            Homework for Class Level
+        {/* Class Level Homework Card */}
+        <div className="bg-white p-8 rounded-2xl shadow-2xl border border-blue-100 hover:shadow-blue-200 transition-shadow duration-300">
+          <h2 className="text-2xl font-bold text-blue-700 mb-6">
+            🏫 Class-Level Homework
           </h2>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
+              onClick={() => navigate("/add-class-homework")}
+              className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-600 transition duration-300 shadow-md hover:shadow-lg"
             >
-              Add Homework
+              <FaPlus /> Add Homework
             </button>
             <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
+              onClick={() => navigate("/class-homeworks")}
+              className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-600 transition duration-300 shadow-md hover:shadow-lg"
             >
-              Get all Homework
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Get Homeworks by class Level
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Get Homeworks by Teacher
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Update a Homework
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-red-600 text-white rounded-md hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Delete a Homework
-            </button>
-          </div>
-        </div>
-
-        {/* Teachers Section */}
-        <div className="bg-white p-6 rounded-lg shadow-xl border border-blue-200">
-          <h2 className="text-2xl font-semibold text-blue-700 mb-6">
-            Homeworks
-          </h2>
-
-          <div className="space-y-4">
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            ></button>
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Get all Homeworks by Subject
-            </button>
-
-            <button
-              onClick={() => {}}
-              className="w-full py-3 px-6 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition transform hover:scale-105 duration-300"
-            >
-              Get Teachers by Student Name
+              <FaListUl /> View / Update / Delete Homework
             </button>
           </div>
         </div>

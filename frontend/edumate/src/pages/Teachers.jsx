@@ -78,20 +78,20 @@ const Teachers = ({ userId }) => {
             onClick={() => navigate("/betyg")}
             className="bg-green-600 text-white text-lg font-semibold px-6 py-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
-            Add Betyg
+            Add Grade
           </button>
         </div>
 
         {/* Manage Meddelanden Card */}
         <div className="bg-yellow-50 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
           <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-            Manage Meddelanden
+            Manage Messages
           </h2>
           <button
             onClick={() => navigate("/manage-meddelanden")}
             className="bg-yellow-600 text-white text-lg font-semibold px-6 py-3 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500"
           >
-            Add Meddelanden
+            Add Messages
           </button>
         </div>
       </div>

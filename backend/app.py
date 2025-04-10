@@ -96,7 +96,6 @@ def protected_route(current_user: User = Depends(get_current_user)):
     A protected route that requires authentication.
     """
     return {"message": f"Hello, {current_user.username}!"}
-
 @app.get("/users/", response_model=List[UserOut])
 def read_users(current_user: User = Depends(get_current_user),
     database: Session = Depends(get_db)):

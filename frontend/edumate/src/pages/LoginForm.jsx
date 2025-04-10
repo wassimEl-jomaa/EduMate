@@ -71,7 +71,7 @@ export default function LoginForm({
                 htmlFor="email"
                 className="block text-gray-700 font-semibold"
               >
-                E-post
+                E-mail
               </label>
               <input
                 type="email"
@@ -89,7 +89,7 @@ export default function LoginForm({
                 htmlFor="password"
                 className="block text-gray-700 font-semibold"
               >
-                Lösenord
+                Password
               </label>
               <input
                 type="password"
@@ -114,7 +114,7 @@ export default function LoginForm({
                 type="submit"
                 className="bg-blue-200 text-xl font-semibold text-center py-2 px-6 rounded-md hover:bg-blue-600 transition-all"
               >
-                Logga In
+                Log in
               </button>
             </div>
           </form>
@@ -122,12 +122,12 @@ export default function LoginForm({
           {/* Registration Link */}
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-700">
-              Har du inget konto?
+              Don't have an account?
               <Link
                 to="/register"
                 className="text-blue-500 hover:text-blue-700"
               >
-                Registrera dig här
+                Register here
               </Link>
             </p>
           </div>
