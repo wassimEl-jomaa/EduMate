@@ -3,6 +3,7 @@ import axios from "axios";
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]); // State for the list of users
+  const [userType, setUserType] = useState("Student"); // Default to Student
   const [arskurser, setArskurser] = useState([]); // State for the list of Arskurs
   const [userData, setUserData] = useState({
     username: "",
@@ -13,10 +14,10 @@ const ManageUsers = () => {
     phone_number: "",
     arskurs_id: "",
     role_id: 0,
+    address: "", // Added address field
   }); // State for user data
   const [editingUserId, setEditingUserId] = useState(null); // State for editing user ID
   const [successMessage, setSuccessMessage] = useState(""); // State for success message
-  const [userType, setUserType] = useState("Student"); // State for user type (default: Student)
   const [errorMessage, setErrorMessage] = useState(""); // State for error message
 
   // Fetch users from the backend
@@ -46,7 +47,7 @@ const ManageUsers = () => {
     const fetchArskurser = async () => {
       const token = localStorage.getItem("token");
       try {
-        const response = await axios.get("http://localhost:8000/arskurs/", {
+        const response = await axios.get("http://localhost:8000/class_levels", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -63,7 +64,7 @@ const ManageUsers = () => {
     fetchArskurser();
   }, []);
 
-  // Add or update a user
+  // Handle form submission (Add or Update User)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -82,7 +83,7 @@ const ManageUsers = () => {
           userData,
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Include the token
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -95,13 +96,13 @@ const ManageUsers = () => {
           `User "${response.data.username}" updated successfully!`
         );
       } else {
-        // Add user
+        // Add new user
         const response = await axios.post(
           "http://localhost:8000/users/",
           userData,
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Include the token
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -111,6 +112,7 @@ const ManageUsers = () => {
         );
       }
 
+      // Reset the form
       setErrorMessage("");
       setUserData({
         username: "",
@@ -120,7 +122,8 @@ const ManageUsers = () => {
         password: "",
         phone_number: "",
         arskurs_id: "",
-        role_id: "",
+        role_id: 0,
+        address: "", // Reset the address field
       });
       setEditingUserId(null);
     } catch (error) {
@@ -133,13 +136,13 @@ const ManageUsers = () => {
     }
   };
 
-  // Delete a user
+  // Handle deleting a user
   const handleDelete = async (userId) => {
-    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+    const token = localStorage.getItem("token");
     try {
       await axios.delete(`http://localhost:8000/users/${userId}/`, {
         headers: {
-          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          Authorization: `Bearer ${token}`,
         },
       });
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
@@ -154,8 +157,24 @@ const ManageUsers = () => {
       setSuccessMessage("");
     }
   };
-
-  // Start editing a user
+  // Handle the user type selection change
+  const handleUserTypeChange = (e) => {
+    const selectedType = e.target.value;
+    setUserType(selectedType);
+    setUserData({
+      username: "",
+      first_name: "",
+      last_name: "",
+      email: "",
+      password: "",
+      phone_number: "",
+      arskurs_id: "",
+      role_id: 0,
+      subject_id: null,
+      qualifications: "",
+    });
+  };
+  // Handle editing a user (pre-fill the form with user data)
   const handleEdit = (user) => {
     setUserData({
       username: user.username,
@@ -166,11 +185,12 @@ const ManageUsers = () => {
       phone_number: user.phone_number,
       arskurs_id: user.arskurs_id || 0,
       role_id: user.role_id || 0,
-      membership_id: user.membership_id || 0,
+      address: user.address || "", // Pre-fill address field for editing
     });
     setEditingUserId(user.id);
   };
 
+  // Handle input field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUserData((prevData) => ({
@@ -178,22 +198,7 @@ const ManageUsers = () => {
       [name]: value,
     }));
   };
-  const handleUserTypeChange = (e) => {
-    setUserType(e.target.value);
-    setUserData({
-      username: "",
-      first_name: "",
-      last_name: "",
-      email: "",
-      password: "",
-      phone_number: "",
-      arskurs_id: "",
-      role_id: 0,
 
-      subject_id: null,
-      qualifications: "",
-    });
-  };
   return (
     <div className="container mx-auto px-6 py-10">
       <h1 className="text-4xl font-extrabold text-gray-800 mb-8 text-center tracking-wide leading-tight">
@@ -223,7 +228,7 @@ const ManageUsers = () => {
               onClick={() => {}}
               className="w-full py-3 px-6 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition transform hover:scale-105 duration-300"
             >
-              Get Students by Årskurs
+              Get Students by class level
             </button>
 
             <button
@@ -271,7 +276,7 @@ const ManageUsers = () => {
               onClick={() => {}}
               className="w-full py-3 px-6 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition transform hover:scale-105 duration-300"
             >
-              Get Parents by Årskurs
+              Get Parents by class level
             </button>
 
             <button
@@ -321,7 +326,7 @@ const ManageUsers = () => {
               onClick={() => {}}
               className="w-full py-3 px-6 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition transform hover:scale-105 duration-300"
             >
-              Get Teachers by Årskurs
+              Get Teachers by class level
             </button>
 
             <button
@@ -348,119 +353,292 @@ const ManageUsers = () => {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto bg-white p-8 border rounded-lg shadow-md mt-10">
-        <h1 className="text-2xl font-bold mb-6">Manage Users</h1>
-        <form onSubmit={handleSubmit}>
-          {/* User Type Selection */}
-          <div className="mb-4">
-            <label
-              htmlFor="user_type"
-              className="block text-gray-700 font-semibold"
-            >
-              User Type
-            </label>
-            <select
-              id="user_type"
-              name="user_type"
-              value={userType}
-              onChange={handleUserTypeChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Student">Student</option>
-              <option value="Teacher">Teacher</option>
-              <option value="Parent">Parent</option>
-            </select>
-          </div>
-
-          {/* Other input fields */}
-          <div className="mb-4">
-            <label
-              htmlFor="username"
-              className="block text-gray-700 font-semibold"
-            >
-              Username
-            </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={userData.username}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter username"
-            />
-          </div>
-
-          {/* Other input fields for first_name, last_name, email, etc. */}
-
-          {/* Arskurs Dropdown */}
-          <div className="mb-4">
-            <label
-              htmlFor="arskurs_id"
-              className="block text-gray-700 font-semibold"
-            >
-              Årskurs
-            </label>
-            <select
-              id="arskurs_id"
-              name="arskurs_id"
-              value={userData.arskurs_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value={0}>Select Arskurs</option>
-              {arskurser.map((arskurs) => (
-                <option key={arskurs.id} value={arskurs.id}>
-                  {arskurs.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Success and Error messages */}
-          {errorMessage && (
-            <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
-          )}
-          {successMessage && (
-            <p className="text-green-500 text-sm mb-4">{successMessage}</p>
-          )}
-
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-all"
+      <form onSubmit={handleSubmit}>
+        {/* User Type Selection */}
+        <div className="mb-4">
+          <label
+            htmlFor="user_type"
+            className="block text-gray-700 font-semibold"
           >
-            {editingUserId ? "Update User" : "Add User"}
-          </button>
-        </form>
+            User Type
+          </label>
+          <select
+            id="user_type"
+            name="user_type"
+            value={userType}
+            onChange={handleUserTypeChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="Student">Student</option>
+            <option value="Teacher">Teacher</option>
+            <option value="Parent">Parent</option>
+          </select>
+        </div>
+
+        {/* Username */}
+        <div className="mb-4">
+          <label
+            htmlFor="username"
+            className="block text-gray-700 font-semibold"
+          >
+            Username
+          </label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            value={userData.username}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter username"
+          />
+        </div>
+
+        {/* First Name */}
+        <div className="mb-4">
+          <label
+            htmlFor="first_name"
+            className="block text-gray-700 font-semibold"
+          >
+            First Name
+          </label>
+          <input
+            type="text"
+            id="first_name"
+            name="first_name"
+            value={userData.first_name}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Last Name */}
+        <div className="mb-4">
+          <label
+            htmlFor="last_name"
+            className="block text-gray-700 font-semibold"
+          >
+            Last Name
+          </label>
+          <input
+            type="text"
+            id="last_name"
+            name="last_name"
+            value={userData.last_name}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Email */}
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-gray-700 font-semibold">
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={userData.email}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Password */}
+        <div className="mb-4">
+          <label
+            htmlFor="password"
+            className="block text-gray-700 font-semibold"
+          >
+            Password
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={userData.password}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Phone Number */}
+        <div className="mb-4">
+          <label
+            htmlFor="phone_number"
+            className="block text-gray-700 font-semibold"
+          >
+            Phone Number
+          </label>
+          <input
+            type="text"
+            id="phone_number"
+            name="phone_number"
+            value={userData.phone_number}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Address */}
+        <div className="mb-4">
+          <label
+            htmlFor="address"
+            className="block text-gray-700 font-semibold"
+          >
+            Address
+          </label>
+          <input
+            type="text"
+            id="address"
+            name="address"
+            value={userData.address}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+
+        {/* Postal Code */}
+        <div className="mb-4">
+          <label
+            htmlFor="postal_code"
+            className="block text-gray-700 font-semibold"
+          >
+            Postal Code
+          </label>
+          <input
+            type="text"
+            id="postal_code"
+            name="postal_code"
+            value={userData.postal_code}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+
+        {/* City */}
+        <div className="mb-4">
+          <label htmlFor="city" className="block text-gray-700 font-semibold">
+            City
+          </label>
+          <input
+            type="text"
+            id="city"
+            name="city"
+            value={userData.city}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+
+        {/* Country */}
+        <div className="mb-4">
+          <label
+            htmlFor="country"
+            className="block text-gray-700 font-semibold"
+          >
+            Country
+          </label>
+          <input
+            type="text"
+            id="country"
+            name="country"
+            value={userData.country}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+
+        {/* Arskurs Dropdown */}
+        <div className="mb-4">
+          <label
+            htmlFor="arskurs_id"
+            className="block text-gray-700 font-semibold"
+          >
+            Class Level
+          </label>
+          <select
+            id="arskurs_id"
+            name="arskurs_id"
+            value={userData.arskurs_id}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={0}>Select class level</option>
+            {arskurser.map((arskurs) => (
+              <option key={arskurs.id} value={arskurs.id}>
+                {arskurs.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Success and Error messages */}
+        {errorMessage && (
+          <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
+        )}
+        {successMessage && (
+          <p className="text-green-500 text-sm mb-4">{successMessage}</p>
+        )}
+
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-all"
+        >
+          {editingUserId ? "Update User" : "Add User"}
+        </button>
+      </form>
+
+      <h2 className="text-xl font-bold mt-8 mb-4">📋 Existing Users</h2>
+
+      <div className="overflow-x-auto rounded-lg shadow">
+        <table className="min-w-full table-auto border border-gray-200 bg-white">
+          <thead className="bg-blue-100">
+            <tr>
+              <th className="px-4 py-2 border">Username</th>
+              <th className="px-4 py-2 border">First Name</th>
+              <th className="px-4 py-2 border">Last Name</th>
+              <th className="px-4 py-2 border">Email</th>
+              <th className="px-4 py-2 border">Phone</th>
+              <th className="px-4 py-2 border">Role</th>
+              <th className="px-4 py-2 border">Address</th>{" "}
+              {/* New Address column */}
+              <th className="px-4 py-2 border">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id} className="hover:bg-gray-50">
+                <td className="px-4 py-2 border">{user.username}</td>
+                <td className="px-4 py-2 border">{user.first_name}</td>
+                <td className="px-4 py-2 border">{user.last_name}</td>
+                <td className="px-4 py-2 border">{user.email}</td>
+                <td className="px-4 py-2 border">{user.phone_number}</td>
+                <td className="px-4 py-2 border">
+                  {user.role?.name || user.role_id}
+                </td>
+                <td className="px-4 py-2 border">{user.address}</td>{" "}
+                {/* Displaying Address */}
+                <td className="px-4 py-2 border text-center">
+                  <button
+                    onClick={() => handleEdit(user)}
+                    className="text-blue-600 hover:underline mr-3"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(user.id)}
+                    className="text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-
-      <h2 className="text-xl font-bold mt-8 mb-4">Existing Users</h2>
-      <ul className="space-y-4">
-        {users.map((user) => (
-          <li
-            key={user.id}
-            className="flex justify-between items-center bg-gray-100 p-4 rounded-md"
-          >
-            <span>
-              {user.username} ({user.email})
-            </span>
-            <div className="space-x-2">
-              <button
-                onClick={() => handleEdit(user)}
-                className="text-blue-500 hover:text-blue-700"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(user.id)}
-                className="text-red-500 hover:text-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 };

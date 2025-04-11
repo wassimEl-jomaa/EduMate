@@ -309,7 +309,7 @@ def read_all_roles(
     roles = database.query(Role).all()  # Fetch all roles from the database
     return roles
 
-@app.post("/roles", response_model=RoleBase)
+@app.get("/roles", response_model=List[RoleBase])
 def add_role(role_data: RoleCreate, 
              current_user: User = Depends(get_current_user),  # Validate token and authenticate user
              database: Session = Depends(get_db)):

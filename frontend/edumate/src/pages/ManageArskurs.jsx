@@ -1,154 +1,178 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const ManageArskurs = () => {
-  const [arskursList, setArskursList] = useState([]); // State for the list of Arskurs
-  const [arskursData, setArskursData] = useState({
+const ManageClassLevel = () => {
+  const [classLevels, setClassLevels] = useState([]); // State for the list of class levels
+  const [classLevelData, setClassLevelData] = useState({
     name: "",
-    description: "",
-    klass: "",
-    skola_id: null, // Add skola_id to the state
-  }); // State for Arskurs data
-  const [editingArskursId, setEditingArskursId] = useState(null); // State for editing Arskurs ID
+    school_id: "",
+  }); // State for class level data
+  const [schools, setSchools] = useState([]); // State for the list of schools
+  const [editingClassLevelId, setEditingClassLevelId] = useState(null); // State for editing class level ID
   const [successMessage, setSuccessMessage] = useState(""); // State for success message
   const [errorMessage, setErrorMessage] = useState(""); // State for error message
 
-  // Fetch Arskurs from the backend
+  // Fetch class levels from the backend
   useEffect(() => {
-    const fetchArskurs = async () => {
+    const fetchClassLevels = async () => {
       const token = localStorage.getItem("token"); // Retrieve the token from localStorage
       try {
-        const response = await axios.get("http://localhost:8000/arskurs/", {
+        const response = await axios.get("http://localhost:8000/class_levels", {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header
           },
         });
-        setArskursList(response.data);
+        setClassLevels(response.data);
       } catch (error) {
         console.error(
-          "Error fetching Arskurs:",
+          "Error fetching class levels:",
           error.response?.data || error.message
         );
-        setErrorMessage("Failed to fetch Arskurs. Please try again.");
+        setErrorMessage("Failed to fetch class levels. Please try again.");
       }
     };
 
-    fetchArskurs();
+    fetchClassLevels();
+  }, []);
+
+  // Fetch schools from the backend
+  useEffect(() => {
+    const fetchSchools = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+      try {
+        const response = await axios.get("http://localhost:8000/schools", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          },
+        });
+        setSchools(response.data);
+      } catch (error) {
+        console.error(
+          "Error fetching schools:",
+          error.response?.data || error.message
+        );
+        setErrorMessage("Failed to fetch schools. Please try again.");
+      }
+    };
+
+    fetchSchools();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!arskursData.name || !arskursData.description) {
-      setErrorMessage("Name and description are required.");
+    if (!classLevelData.name || !classLevelData.school_id) {
+      setErrorMessage("Name and school are required.");
       return;
     }
-
-    console.log("Submitting Arskurs Data:", arskursData); // Log the data
 
     const token = localStorage.getItem("token"); // Retrieve the token from localStorage
 
     try {
-      if (editingArskursId) {
-        // Update Arskurs
-        const response = await axios.patch(
-          `http://localhost:8000/arskurs/${editingArskursId}`,
-          arskursData,
+      if (editingClassLevelId) {
+        // Update class level
+        const response = await axios.put(
+          // Use PUT instead of PATCH
+          `http://localhost:8000/class_levels/${editingClassLevelId}`,
+          classLevelData,
           {
             headers: {
               Authorization: `Bearer ${token}`, // Include the token in the Authorization header
             },
           }
         );
-        setArskursList((prevArskurs) =>
-          prevArskurs.map((arskurs) =>
-            arskurs.id === editingArskursId ? response.data : arskurs
+        setClassLevels((prevClassLevels) =>
+          prevClassLevels.map((classLevel) =>
+            classLevel.id === editingClassLevelId ? response.data : classLevel
           )
         );
         setSuccessMessage(
-          `Arskurs "${response.data.name}" updated successfully!`
+          `Class Level "${response.data.name}" updated successfully!`
         );
       } else {
-        // Add Arskurs
+        // Add class level
         const response = await axios.post(
-          "http://localhost:8000/arskurs/",
-          arskursData,
+          "http://localhost:8000/class_levels/",
+          classLevelData,
           {
             headers: {
               Authorization: `Bearer ${token}`, // Include the token in the Authorization header
             },
           }
         );
-        setArskursList((prevArskurs) => [...prevArskurs, response.data]);
+        setClassLevels((prevClassLevels) => [
+          ...prevClassLevels,
+          response.data,
+        ]);
         setSuccessMessage(
-          `Arskurs "${response.data.name}" added successfully!`
+          `Class Level "${response.data.name}" added successfully!`
         );
       }
 
       setErrorMessage("");
-      setArskursData({
+      setClassLevelData({
         name: "",
-        description: "",
-        klass: "",
-        skola_id: null,
+        school_id: "",
       });
-      setEditingArskursId(null);
+      setEditingClassLevelId(null);
     } catch (error) {
       console.error(
-        "Error managing Arskurs:",
+        "Error managing class level:",
         error.response?.data || error.message
       );
-      setErrorMessage("Failed to manage Arskurs. Please try again.");
+      setErrorMessage("Failed to manage class level. Please try again.");
       setSuccessMessage("");
     }
   };
 
-  // Delete an Arskurs
-  const handleDelete = async (arskursId) => {
+  // Delete a class level
+  const handleDelete = async (classLevelId) => {
     const token = localStorage.getItem("token"); // Retrieve the token from localStorage
     try {
-      await axios.delete(`http://localhost:8000/arskurs/${arskursId}/`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
-        },
-      });
-      setArskursList((prevArskurs) =>
-        prevArskurs.filter((arskurs) => arskurs.id !== arskursId)
+      await axios.delete(
+        `http://localhost:8000/class_levels/${classLevelId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          },
+        }
       );
-      setSuccessMessage("Arskurs deleted successfully!");
+      setClassLevels((prevClassLevels) =>
+        prevClassLevels.filter((classLevel) => classLevel.id !== classLevelId)
+      );
+      setSuccessMessage("Class Level deleted successfully!");
       setErrorMessage("");
     } catch (error) {
       console.error(
-        "Error deleting Arskurs:",
+        "Error deleting class level:",
         error.response?.data || error.message
       );
-      setErrorMessage("Failed to delete Arskurs. Please try again.");
+      setErrorMessage("Failed to delete class level. Please try again.");
       setSuccessMessage("");
     }
-  };
-
-  // Start editing an Arskurs
-  const handleEdit = (arskurs) => {
-    setArskursData({
-      name: arskurs.name,
-      description: arskurs.description,
-      klass: arskurs.klass,
-      skola_id: arskurs.skola_id || null, // Ensure skola_id is included
-    });
-    setEditingArskursId(arskurs.id);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setArskursData((prevData) => ({
+    setClassLevelData((prevData) => ({
       ...prevData,
-      [name]: name === "skola_id" ? parseInt(value) || null : value, // Parse skola_id as an integer
+      [name]: value,
     }));
+  };
+
+  const handleEdit = (classLevel) => {
+    setEditingClassLevelId(classLevel.id);
+    setClassLevelData({
+      name: classLevel.name,
+      school_id: classLevel.school_id || "",
+    });
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   return (
     <div className="max-w-lg mx-auto bg-white p-8 border rounded-lg shadow-md mt-10">
-      <h1 className="text-2xl font-bold mb-6">Manage Arskurs</h1>
+      <h1 className="text-2xl font-bold mb-6">Manage Class Levels</h1>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label htmlFor="name" className="block text-gray-700 font-semibold">
@@ -158,59 +182,35 @@ const ManageArskurs = () => {
             type="text"
             id="name"
             name="name"
-            value={arskursData.name}
+            value={classLevelData.name}
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter name"
+            placeholder="Enter class level name"
           />
         </div>
         <div className="mb-4">
           <label
-            htmlFor="description"
+            htmlFor="school_id"
             className="block text-gray-700 font-semibold"
           >
-            Description
+            School
           </label>
-          <textarea
-            id="description"
-            name="description"
-            value={arskursData.description}
+          <select
+            id="school_id"
+            name="school_id"
+            value={classLevelData.school_id}
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter description"
-          />
-        </div>
-        <div className="mb-4">
-          <label
-            htmlFor="skola_id"
-            className="block text-gray-700 font-semibold"
           >
-            Skola ID
-          </label>
-          <input
-            type="number"
-            id="skola_id"
-            name="skola_id"
-            value={arskursData.skola_id || ""}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter Skola ID"
-          />
+            <option value="">Select a school</option>
+            {schools.map((school) => (
+              <option key={school.id} value={school.id}>
+                {school.name}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="mb-4">
-          <label htmlFor="klass" className="block text-gray-700 font-semibold">
-            Klass
-          </label>
-          <input
-            type="text"
-            id="klass"
-            name="klass"
-            value={arskursData.klass}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter klass"
-          />
-        </div>
+
         {errorMessage && (
           <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
         )}
@@ -221,30 +221,29 @@ const ManageArskurs = () => {
           type="submit"
           className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-all"
         >
-          {editingArskursId ? "Update Arskurs" : "Add Arskurs"}
+          {editingClassLevelId ? "Update Class Level" : "Add Class Level"}
         </button>
       </form>
 
-      <h2 className="text-xl font-bold mt-8 mb-4">Existing Arskurs</h2>
+      <h2 className="text-xl font-bold mt-8 mb-4">Existing Class Levels</h2>
       <ul className="space-y-4">
-        {arskursList.map((arskurs) => (
+        {classLevels.map((classLevel) => (
           <li
-            key={arskurs.id}
+            key={classLevel.id}
             className="flex justify-between items-center bg-gray-100 p-4 rounded-md"
           >
             <span>
-              {arskurs.name} - {arskurs.description} ({arskurs.skola},{" "}
-              {arskurs.klass})
+              {classLevel.name} - School ID: {classLevel.school_id || "N/A"}
             </span>
             <div className="space-x-2">
               <button
-                onClick={() => handleEdit(arskurs)}
+                onClick={() => handleEdit(classLevel)}
                 className="text-blue-500 hover:text-blue-700"
               >
                 Edit
               </button>
               <button
-                onClick={() => handleDelete(arskurs.id)}
+                onClick={() => handleDelete(classLevel.id)}
                 className="text-red-500 hover:text-red-700"
               >
                 Delete
@@ -257,4 +256,4 @@ const ManageArskurs = () => {
   );
 };
 
-export default ManageArskurs;
+export default ManageClassLevel;

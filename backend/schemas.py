@@ -50,6 +50,7 @@ class UpdateUser(BaseModel):
         from_attributes = True  # Allows Pydantic to read data from SQLAlchemy models
 
 class RoleBase(BaseModel):
+    id: int  
     name: str
     class Config:
         from_attributes = True  

@@ -22,7 +22,7 @@ const Admin = () => {
               to="/manage-meddelanden"
               className="block text-lg text-blue-800 hover:text-blue-600"
             >
-              Meddelanden
+              Messages
             </Link>
           </li>
           <li>
@@ -30,7 +30,7 @@ const Admin = () => {
               to="/manage-arskurs"
               className="block text-lg text-blue-800 hover:text-blue-600"
             >
-              Arskurs
+              class level
             </Link>
           </li>
           <li>
@@ -41,14 +41,7 @@ const Admin = () => {
               Roles
             </Link>
           </li>
-          <li>
-            <Link
-              to="/manage-memberships"
-              className="block text-lg text-blue-800 hover:text-blue-600"
-            >
-              Membership
-            </Link>
-          </li>
+
           <li>
             <Link
               to="/manage-teachers"
